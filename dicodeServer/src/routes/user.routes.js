@@ -12,10 +12,7 @@ const userRouter = Router();
 
 userRouter.post("/register", registerUser);
 userRouter.post("/login", loginUser);
-
-userRouter.use(isAuthenticated);
-
-userRouter.post("/logout", logoutUser);
-userRouter.get("/find-friends", findFriends);
+userRouter.post("/logout", isAuthenticated,logoutUser);
+userRouter.get("/find-friends",isAuthenticated, findFriends);
 
 export default userRouter;

@@ -12,7 +12,7 @@ import isAuthenticated from "../middlewares/authMid.js";
 
 const friendshipRouter = Router();
 
-friendshipRouter.use(isAuthenticated);
+// friendshipRouter.use(isAuthenticated);
 
 friendshipRouter.post("/request", sendFriendRequest);
 

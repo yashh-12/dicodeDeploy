@@ -4,7 +4,7 @@ import isAuthenticated from "../middlewares/authMid.js";
 
 const chatRouter = Router();
 
-chatRouter.use(isAuthenticated);
+// chatRouter.use(isAuthenticated);
 
 chatRouter.post("/send/:roomId", sendMessage);
 

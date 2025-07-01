@@ -1,7 +1,7 @@
 import { AccessToken } from "livekit-server-sdk";
 import asyncHandler from "../utils/asyncHandler.js";
 import apiResponse from "../utils/apiResponse.js";
-import Room from "../models/Room.js";
+import Room from "../models/room.model.js";
 
 const getLiveKitToken = asyncHandler(async (req, res) => {
     const userId = req.user.id;

@@ -1,6 +1,8 @@
-import User from "../models/user.model";
-import apiResponse from "../utils/apiResponse";
-import asyncHandler from "../utils/asyncHandler";
+import User from "../models/user.model.js";
+import FriendShip from "../models/friendship.model.js";
+import apiResponse from "../utils/apiResponse.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import jwt from "jsonwebtoken"
 
 const registerUser = asyncHandler(async (req, res) => {
     const { name, username, email, password } = req.body;
@@ -41,7 +43,7 @@ const registerUser = asyncHandler(async (req, res) => {
         .json(new apiResponse(
             200,
             {},
-            "User registered successfully. Verify your email"
+            "User registered successfully."
         ));
 });
 
@@ -130,32 +132,32 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 
 const findFriends = asyncHandler(async (req, res) => {
-  const currentUserId = req.user._id;
+    const currentUserId = req.user._id;
 
-  const currentUser = await User.findById(currentUserId).select("friends");
+    const currentUser = await User.findById(currentUserId).select("friends");
 
-  const pendingRequests = await FriendRequest.find({
-    $or: [{ from: currentUserId }, { to: currentUserId }],
-    status: "pending"
-  });
+    const pendingRequests = await FriendShip.find({
+        $or: [{ from: currentUserId }, { to: currentUserId }],
+        status: "pending"
+    });
 
-  const pendingIds = new Set();
-  pendingRequests.forEach(req => {
-    pendingIds.add(req.from.toString());
-    pendingIds.add(req.to.toString());
-  });
+    const pendingIds = new Set();
+    pendingRequests.forEach(req => {
+        pendingIds.add(req.from.toString());
+        pendingIds.add(req.to.toString());
+    });
 
-  const excludedIds = [
-    currentUserId,
-    ...currentUser.friends.map(id => id.toString()),
-    ...Array.from(pendingIds)
-  ];
+    const excludedIds = [
+        currentUserId,
+        ...currentUser.friends.map(id => id.toString()),
+        ...Array.from(pendingIds)
+    ];
 
-  const users = await User.find({
-    _id: { $nin: excludedIds }
-  }).select("_id name username email avatar");
+    const users = await User.find({
+        _id: { $nin: excludedIds }
+    }).select("_id name username email avatar");
 
-  return res.status(200).json(new apiResponse(200, users, "Users available to send friend request"));
+    return res.status(200).json(new apiResponse(200, users, "Users available to send friend request"));
 });
 
 

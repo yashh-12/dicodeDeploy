@@ -57,6 +57,10 @@ const leaveRoom = asyncHandler(async (req, res) => {
     const room = await Room.findById(roomId);
     if (!room) return res.status(404).json(new apiResponse(404, {}, "Room not found"));
 
+    if (room.creator.toString() == userId) {
+        return res.status(400).json(new apiResponse(400, {}, "You can't leave room"));
+    }
+
     const index = room.members.findIndex(m => m.user.toString() === userId);
     if (index === -1)
         return res.status(400).json(new apiResponse(400, {}, "You're not a member"));
@@ -78,7 +82,7 @@ const getAllRooms = asyncHandler(async (req, res) => {
 });
 
 
-export  {
+export {
     createRoom,
     deleteRoom,
     joinRoom,

@@ -79,6 +79,7 @@ userSchema.methods.generateAccessToken = async function () {
 
 
 userSchema.methods.generateRefreshToken = async function () {
+    
     const token = jwt.sign(
         {
             id: this._id,
