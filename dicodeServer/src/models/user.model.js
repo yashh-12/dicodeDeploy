@@ -39,6 +39,9 @@ const userSchema = mongoose.Schema(
         refreshToken: {
             type: String,
         },
+        accessToken: {
+            type: String,
+        },
         friends: [
             {
                 type: mongoose.Schema.Types.ObjectId,
@@ -79,7 +82,7 @@ userSchema.methods.generateAccessToken = async function () {
 
 
 userSchema.methods.generateRefreshToken = async function () {
-    
+
     const token = jwt.sign(
         {
             id: this._id,

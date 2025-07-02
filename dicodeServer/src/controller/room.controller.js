@@ -3,7 +3,9 @@ import asyncHandler from "../utils/asyncHandler.js";
 import apiResponse from "../utils/apiResponse.js";
 
 const createRoom = asyncHandler(async (req, res) => {
-    const userId = req.user.id;
+    const userId = req.user._id;
+    console.log("userId ",userId);
+    
     const { name } = req.body;
 
     if (!name) return res.status(400).json(new apiResponse(400, {}, "Room name is required"));
@@ -50,7 +52,6 @@ const joinRoom = asyncHandler(async (req, res) => {
 });
 
 const leaveRoom = asyncHandler(async (req, res) => {
-
     const userId = req.user.id;
     const { roomId } = req.params;
 

@@ -15,10 +15,14 @@ const isAuthenticated = async (req, res, next) => {
 
   const user = await User.findById(decodedToken?.id);
 
+
   if (!user)
     return res.status(401).json(new apiResponse(401, {}, "UnAuthorized"))
 
-  if (!user.accessToken === token)
+  // console.log("accessToken ",user.accessToken,"Token ",token , " ", user.accessToken == token);
+  
+
+  if (user.accessToken != token)
     return res.status(401).json(new apiResponse(401, {}, "UnAuthorized"))
 
   req.user = user;

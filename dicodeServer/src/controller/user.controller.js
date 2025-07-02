@@ -78,9 +78,10 @@ const loginUser = asyncHandler(async (req, res) => {
     const refreshToken = await user.generateRefreshToken();
 
     user.refreshToken = refreshToken;
+    user.accessToken = accessToken;
     await user.save();
 
-    const newUser = await User.findById(user._id).select("-password -refreshToken -otp");
+    const newUser = await User.findById(user._id).select("-password -refreshToken -accessToken");
 
     const optionsForAccessToken = {
         maxAge: 1000 * 60 * 60 * 24 * 1,
@@ -117,6 +118,7 @@ const logoutUser = asyncHandler(async (req, res) => {
         return res.status(400).json(new apiResponse(400, {}, "Please login first"));
 
     user.refreshToken = undefined;
+    user.accessToken = undefined;
     await user.save();
 
     return res
@@ -160,10 +162,22 @@ const findFriends = asyncHandler(async (req, res) => {
     return res.status(200).json(new apiResponse(200, users, "Users available to send friend request"));
 });
 
+const getUserDetail = asyncHandler(async (req, res) => {
+    const userId = req?.user?._id;
+
+    const user = await User.findById(userId).select("-password -refreshToken");
+
+    if (!user)
+        return res.status(400).json(new apiResponse(400, {}, "Please login first"));
+
+    return res.status(400).json(new apiResponse(400, {user}, "Please login first"));
+
+})
 
 export {
     registerUser,
     loginUser,
     logoutUser,
-    findFriends
+    findFriends,
+    getUserDetail
 }
