@@ -1,6 +1,6 @@
 const createRoom = async (name) => {
     try {
-        const res = await fetch("http://localhost:8080/api/rooms/", {
+        const res = await fetch("http://localhost:8059/api/rooms/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -19,11 +19,23 @@ const createRoom = async (name) => {
 
 const getAllRooms = async () => {
     try {
-        const res = await fetch("http://localhost:8080/api/rooms/", {
+        const res = await fetch("http://localhost:8059/api/rooms/", {
             method: "GET",
             credentials: "include"
-        });
+        });        
+        return await res.json();
+    } catch (error) {
+        console.error("Error fetching rooms:", error);
+        return { success: false, error: error.message };
+    }
+};
 
+const getRoomDetails = async (roomId) => {
+    try {
+        const res = await fetch(`http://localhost:8059/api/rooms/room/${roomId}`, {
+            method: "GET",
+            credentials: "include"
+        });        
         return await res.json();
     } catch (error) {
         console.error("Error fetching rooms:", error);
@@ -34,7 +46,7 @@ const getAllRooms = async () => {
 
 const joinRoom = async (roomId) => {
     try {
-        const res = await fetch(`http://localhost:8080/api/rooms/join/${roomId}`, {
+        const res = await fetch(`http://localhost:8059/api/rooms/join/${roomId}`, {
             method: "POST",
             credentials: "include"
         });
@@ -49,7 +61,7 @@ const joinRoom = async (roomId) => {
 
 const leaveRoom = async (roomId) => {
     try {
-        const res = await fetch(`http://localhost:8080/api/rooms/leave/${roomId}`, {
+        const res = await fetch(`http://localhost:8059/api/rooms/leave/${roomId}`, {
             method: "POST",
             credentials: "include"
         });
@@ -64,7 +76,7 @@ const leaveRoom = async (roomId) => {
 
 const deleteRoom = async (roomId) => {
     try {
-        const res = await fetch(`http://localhost:8080/api/rooms/${roomId}`, {
+        const res = await fetch(`http://localhost:8059/api/rooms/${roomId}`, {
             method: "DELETE",
             credentials: "include"
         });
@@ -81,5 +93,6 @@ export {
     getAllRooms,
     joinRoom,
     leaveRoom,
-    deleteRoom
+    deleteRoom,
+    getRoomDetails
 };

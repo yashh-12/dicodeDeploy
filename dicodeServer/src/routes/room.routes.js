@@ -4,7 +4,8 @@ import {
   deleteRoom,
   joinRoom,
   leaveRoom,
-  getAllRooms
+  getAllRooms,
+  getRoomDetails
 } from "../controller/room.controller.js";
 
 import isAuthenticated from "../middlewares/authMid.js";
@@ -18,10 +19,14 @@ roomRouter.post("/", createRoom);
 
 roomRouter.get("/", getAllRooms);
 
-roomRouter.post("/join/:roomId", joinRoom);
+roomRouter.get("/room/:roomId", getRoomDetails);
+
+roomRouter.post("/join/:roomId",isRoomOwner, joinRoom);
 
 roomRouter.post("/leave/:roomId", leaveRoom);
 
 roomRouter.delete("/:roomId", isRoomOwner, deleteRoom);
+
+
 
 export default roomRouter;

@@ -1,6 +1,6 @@
 const getLiveKitToken = async (roomId) => {
     try {
-        const res = await fetch(`http://localhost:8080/api/livekit/token/${roomId}`, {
+        const res = await fetch(`http://localhost:8059/api/livekit/token/${roomId}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

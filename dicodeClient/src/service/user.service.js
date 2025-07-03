@@ -1,6 +1,6 @@
 const registerUser = async ({ name, username, email, password }) => {
   try {
-    const res = await fetch("http://localhost:8080/api/users/register", {
+    const res = await fetch("http://localhost:8059/api/users/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -19,7 +19,7 @@ const registerUser = async ({ name, username, email, password }) => {
 
 const loginUser = async ({ usernameOrEmail, password }) => {
   try {
-    const res = await fetch("http://localhost:8080/api/users/login", {
+    const res = await fetch("http://localhost:8059/api/users/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -39,7 +39,7 @@ const loginUser = async ({ usernameOrEmail, password }) => {
 
 const logoutUser = async () => {
   try {
-    const res = await fetch("http://localhost:8080/api/users/logout", {
+    const res = await fetch("http://localhost:8059/api/users/logout", {
       method: "POST",
       credentials: "include"
     });
@@ -51,10 +51,24 @@ const logoutUser = async () => {
   }
 };
 
+const getUserDetails = async () => {
+  try {
+    const res = await fetch("http://localhost:8059/api/users/", {
+      method: "GET",
+      credentials: "include"
+    });
+
+    return await res.json();
+  } catch (error) {
+    console.error("Error finding out user:", error);
+    return { success: false, error: error.message };
+  }
+};
+
 
 const findFriends = async () => {
   try {
-    const res = await fetch("http://localhost:8080/api/users/find-friends", {
+    const res = await fetch("http://localhost:8059/api/users/find-friends", {
       method: "GET",
       credentials: "include"
     });
@@ -70,5 +84,6 @@ export {
   registerUser,
   loginUser,
   logoutUser,
-  findFriends
+  findFriends,
+  getUserDetails
 };

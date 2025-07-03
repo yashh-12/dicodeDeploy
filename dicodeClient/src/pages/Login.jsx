@@ -1,29 +1,52 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "../component/Header";
 import logo from "/code.png";
 import { loginUser } from "../service/user.service"; // adjust path if needed
+import useUser from "../provider/UserProvider";
 
 const Login = () => {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const {userData,setUserData} = useUser();
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     const res = await loginUser({ usernameOrEmail, password });
 
     if (res.success) {
-      console.log("Login successful");
-      // navigate("/workspace") or show toast
+      console.log("Login successful",res.data);    
+      setUserData(res?.data);
+      navigate("/space")
     } else {
+      setError(res?.message);
       console.error("Login failed", res.error || res.message);
-      // show error
+      setTimeout(() => {
+        setError("")
+      }, 2000)
     }
   };
 
   return (
     <div className="relative min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center px-4 overflow-hidden">
       <Header />
+
+      {error && (
+        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-50 w-[90%] max-w-md">
+          <div className="bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg flex justify-between items-center">
+            <span className="text-sm font-medium">{error}</span>
+            <button
+              className="ml-4 text-white hover:text-gray-200 text-xl leading-none"
+              onClick={() => setError("")}
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Neon animated glow behind card */}
       <div className="absolute w-[360px] h-[500px] bg-gradient-to-br from-cyan-500 via-indigo-500 to-purple-600 rounded-3xl blur-2xl opacity-40 animate-pulse z-0" />

@@ -17,10 +17,16 @@ const registerUser = asyncHandler(async (req, res) => {
         $or: [{ email }, { username }],
     });
 
-    if (existingUser) {
+    if (existingUser.email == email) {
         return res
             .status(400)
-            .json(new apiResponse(400, {}, "Email or username already registered"));
+            .json(new apiResponse(400, {}, "Email is already registered"));
+    }
+
+     if (existingUser.username == username) {
+        return res
+            .status(400)
+            .json(new apiResponse(400, {}, "Username is already registered"));
     }
 
 
@@ -165,12 +171,15 @@ const findFriends = asyncHandler(async (req, res) => {
 const getUserDetail = asyncHandler(async (req, res) => {
     const userId = req?.user?._id;
 
-    const user = await User.findById(userId).select("-password -refreshToken");
+    console.log("userId", userId);
+    
+
+    const user = await User.findById(userId).select("-password -refreshToken -refreshToken");
 
     if (!user)
         return res.status(400).json(new apiResponse(400, {}, "Please login first"));
 
-    return res.status(400).json(new apiResponse(400, {user}, "Please login first"));
+    return res.status(200).json(new apiResponse(200, user, "Successfully fetched user"));
 
 })
 

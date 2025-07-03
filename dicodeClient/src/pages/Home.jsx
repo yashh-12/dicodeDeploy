@@ -9,13 +9,13 @@ const Home = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setTextIndex((prev) => (prev + 1) % textOptions.length);
-    }, 2000);
+    }, 1500);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white px-6 py-12 flex items-center justify-center">
-      <Header/>
+      <Header />
       <div className="max-w-6xl w-full text-center">
         <h1 className="text-4xl sm:text-6xl font-extrabold mb-6 leading-tight">
           <span className="text-cyan-400">Real-time</span>{" "}
@@ -27,11 +27,11 @@ const Home = () => {
           </span>
         </h1>
 
-        <p className="text-gray-400 text-lg sm:text-xl max-w-2xl mx-auto mb-10">
+        <div className="text-gray-400 text-lg sm:text-xl max-w-2xl mx-auto mb-10">
           Share your code, notes live with others in seconds.
-          Empower teamwork with drag-and-drop flow, Monaco editor, and more 
-          <div>— all in one place.</div>
-        </p>
+          Empower teamwork with drag-and-drop flow, Monaco editor, and more
+          <div> — all in one place.</div>
+        </div>
 
 
 

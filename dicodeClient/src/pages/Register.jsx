@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "../component/Header";
 import { registerUser } from "../service/user.service";
 import logo from "/code.png"; // Add logo import
@@ -9,6 +9,9 @@ const Register = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -16,22 +19,40 @@ const Register = () => {
 
     if (res.success) {
       console.log("Registered successfully");
-      // navigate("/login")
+      navigate("/login")
     } else {
-      console.error("Registration failed:", res.error || res.message);
+      setError(res.message)
+      console.error("Registration failed:", res.message);
+
+      setTimeout(() => {
+        setError("")
+      }, 2000)
     }
+
   };
 
   return (
     <div className="relative min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center px-4 overflow-hidden">
       <Header />
-
+      {error && (
+        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-50 w-[90%] max-w-md">
+          <div className="bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg flex justify-between items-center">
+            <span className="text-sm font-medium">{error}</span>
+            <button
+              className="ml-4 text-white hover:text-gray-200 text-xl leading-none"
+              onClick={() => setError("")}
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
       {/* Neon animated glow */}
       <div className="absolute w-[360px] h-[500px] bg-gradient-to-br from-cyan-500 via-indigo-500 to-purple-600 rounded-3xl blur-2xl opacity-40 animate-pulse z-0" />
 
       {/* Glass Register card */}
       <div className="relative w-full max-w-sm z-10 bg-white/5 backdrop-blur-md border border-white/10 p-8 rounded-2xl shadow-2xl">
-        
+
         {/* Logo */}
         <div className="flex justify-center mb-6">
           <Link to="/">

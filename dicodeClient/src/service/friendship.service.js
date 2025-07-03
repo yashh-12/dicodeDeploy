@@ -1,6 +1,6 @@
 const sendFriendRequest = async (to) => {
   try {
-    const res = await fetch("http://localhost:8080/api/friends/request", {
+    const res = await fetch("http://localhost:8059/api/friends/request", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -18,7 +18,7 @@ const sendFriendRequest = async (to) => {
 
 const cancelFriendRequest = async (to) => {
   try {
-    const res = await fetch("http://localhost:8080/api/friends/request", {
+    const res = await fetch("http://localhost:8059/api/friends/request", {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json"
@@ -36,7 +36,7 @@ const cancelFriendRequest = async (to) => {
 
 const acceptFriendRequest = async (from) => {
   try {
-    const res = await fetch("http://localhost:8080/api/friends/accept", {
+    const res = await fetch("http://localhost:8059/api/friends/accept", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -54,7 +54,7 @@ const acceptFriendRequest = async (from) => {
 
 const rejectFriendRequest = async (from) => {
   try {
-    const res = await fetch("http://localhost:8080/api/friends/reject", {
+    const res = await fetch("http://localhost:8059/api/friends/reject", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -72,7 +72,7 @@ const rejectFriendRequest = async (from) => {
 
 const getPendingRequests = async () => {
   try {
-    const res = await fetch("http://localhost:8080/api/friends/pending", {
+    const res = await fetch("http://localhost:8059/api/friends/pending", {
       method: "GET",
       credentials: "include"
     });
@@ -86,7 +86,7 @@ const getPendingRequests = async () => {
 
 const getFriendsList = async () => {
   try {
-    const res = await fetch("http://localhost:8080/api/friends/list", {
+    const res = await fetch("http://localhost:8059/api/friends/list", {
       method: "GET",
       credentials: "include"
     });
