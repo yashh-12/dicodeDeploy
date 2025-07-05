@@ -4,18 +4,16 @@ import useSocket from '../provider/SocketProvider';
 
 function CodeEditor({ role = "viewer", roomId }) {
     const [code, setCode] = useState("");
-    const editorRef = useRef(null);            // Monaco editor instance
-    const monacoRef = useRef(null);            // Monaco library instance
-    const isRemoteChangeRef = useRef(false);   // To prevent infinite loop
-
+    const editorRef = useRef(null);            
+    const monacoRef = useRef(null);            
+    const isRemoteChangeRef = useRef(false);   
     const { socket } = useSocket();
 
-    // Handle incoming changes from others
     useEffect(() => {
         if (!socket) return;
 
         const handleIncomingChanges = ({ changes }) => {
-            
+
             const editor = editorRef.current;
             const monaco = monacoRef.current;
 
@@ -42,6 +40,28 @@ function CodeEditor({ role = "viewer", roomId }) {
 
             isRemoteChangeRef.current = false;
         };
+
+        socket.on("find-latest-code", ({ userId }) => {
+            const editor = editorRef.current;
+            if (!editor) return;
+
+            const latestCode = editor.getValue();         
+            socket.emit("got-code", { code: latestCode, userId });
+        });
+
+
+        socket.on("sent-latest-code", ({ code }) => {
+            if (editorRef.current) {
+                const editor = editorRef.current;
+
+                const currentCode = editor.getValue();
+                if (currentCode !== code) {
+                    editor.setValue(code); 
+                }
+            }
+            setCode(code);
+        });
+
 
         socket.on("incomming-code-change", handleIncomingChanges);
 

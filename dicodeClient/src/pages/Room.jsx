@@ -30,6 +30,7 @@ function Room() {
 
     socket.emit("register", { roomId });
     socket.emit("join-req", { roomId });
+    socket.emit("need-latest-code",{});
 
     socket.on("give-req", ({ userData }) => {
       setIncomingCalls((prev) => {
@@ -53,8 +54,7 @@ function Room() {
 
     socket.on("joined-room", ({ user }) => {
 
-      console.log("joined Room ", user);
-
+  
 
       setRoomDetails((prev) => {
         const alreadyExists = prev.members.some(m => m?.user?._id === user?._id);
@@ -249,7 +249,7 @@ function Room() {
                     </div>
                   </div>
 
-                  {isCreator && (
+                  {isCreator && user?._id !== userData._id && (
                     <button
                       className="px-3 py-1 text-sm bg-red-500 hover:bg-red-400 text-white font-medium rounded-md"
                       onClick={() => handleKickUser(user?._id)}
@@ -257,6 +257,7 @@ function Room() {
                       Kick
                     </button>
                   )}
+
                 </div>
               ))}
             </div>

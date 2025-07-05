@@ -83,22 +83,27 @@ server.on("connection", (socket) => {
         };
     });
 
-    socket.on("join-req", async ({ roomId }) => {
+    socket.on("join-req", async () => {
         try {
+            const currentUserId = socket.user.id;
+            const socketDetails = socketHashMap[currentUserId];
+            const roomId = socketDetails?.roomId;
+
+            if (!roomId) {
+                console.error("Room ID not found for user in socketHashMap");
+                return;
+            }
+
             const room = await Room.findById(roomId).populate("members.user");
             if (!room) return;
 
             const creatorId = room.creator.toString();
-            const currentUserId = socket.user.id;
 
             const isMember = room.members.some(member =>
                 member.user._id.toString() === currentUserId
             );
 
             if (creatorId === currentUserId || isMember) {
-
-                console.log("this rannnnnn ");
-
                 const userData = await User.findById(currentUserId).select("-password -refreshToken -accessToken");
 
                 socket.join(roomId);
@@ -112,22 +117,24 @@ server.on("connection", (socket) => {
 
             if (creatorSocketId) {
                 const userData = await User.findById(currentUserId).select("-password -refreshToken -accessToken");
-
                 socket.to(creatorSocketId).emit("give-req", { userData });
-
-                // console.log(`Join request from ${currentUserId} sent to room creator ${creatorId}`);
             } else {
-                // console.log("Creator not connected or not found in socketHashMap");
                 socket.emit("no-host", {});
             }
 
         } catch (err) {
-            // console.error("Error handling join-req:", err.message);
+            console.error("Error handling join-req:", err.message);
         }
     });
 
     socket.on("kick-room", async ({ userId }) => {
         const loggedInUser = socket.user;
+
+        if (loggedInUser.id === userId) {
+            console.warn("Creator attempted to kick themselves. Operation ignored.");
+            return;
+        }
+
 
         try {
             const socketDetails = socketHashMap[loggedInUser.id];
@@ -158,16 +165,27 @@ server.on("connection", (socket) => {
         }
     });
 
-    socket.on("join-room", async ({ roomId, user }) => {
+    socket.on("join-room", async ({ user }) => {
         try {
+            const userId = socket.user.id;
+            const socketDetails = socketHashMap[userId];
+            const roomId = socketDetails?.roomId;
 
-            const room = await Room.findById(roomId)
-            if (!room) {
+            if (!roomId) {
+                console.error("Room ID missing from socketHashMap");
+                return;
+            }
+
+            const room = await Room.findById(roomId);
+            if (!room) return;
+
+            if (room.creator.toString() !== userId.toString()) {
+                console.warn("Unauthorized attempt to add user by non-creator:", userId);
                 return;
             }
 
             const isAlreadyMember = room.members.some(
-                (member) => member.user._id.toString() === user._id
+                (member) => member.user.toString() === user._id
             );
 
             if (!isAlreadyMember) {
@@ -182,18 +200,12 @@ server.on("connection", (socket) => {
             }
 
             const userData = await User.findById(user._id).select("-password -refreshToken -accessToken");
+            if (!userData) return;
 
-            if (!userData) {
-                console.log("No user found in DB");
-                return;
-            }
+            const socketDetailsForSendUser = socketHashMap[userData._id];
 
-            console.log("userData ", userData);
+            socket.to(socketDetailsForSendUser?.socketId).emit("joine-room", { user: userData });
 
-            const socketDetails = socketHashMap[userData._id];
-
-
-            socket.to(socketDetails?.socketId).emit("joine-room", { user: userData });
             server.to(roomId).emit("joined-room", { user: userData });
 
         } catch (err) {
@@ -201,11 +213,64 @@ server.on("connection", (socket) => {
         }
     });
 
-    socket.on("code-change", ({ changes }) => {
-        const user = socket.user;
-        const socketDetails = socketHashMap[user.id]
-        socket.to(socketDetails.roomId).emit("incomming-code-change", { changes })
+    socket.on("need-latest-code", async ({ }) => {
+        const userId = socket.user.id;
+        const socketDetails = socketHashMap[userId];
+        const roomId = socketDetails?.roomId;
+
+        if (!roomId) {
+            console.error("Missing roomId for code-change");
+            return;
+        }
+
+        const room = await Room.findById(roomId);
+
+        if (room.creator.toString() == userId.toString())
+            return;
+
+        const userToGetCode = socketHashMap[room.creator]
+
+        socket.to(userToGetCode.socketId).emit("find-latest-code", { userId });
+    });
+
+    socket.on("got-code", async ({ code, userId }) => {
+
+        console.log("code ",code);
+        
+
+        const userID = socket.user.id;
+        const socketDetails = socketHashMap[userID];
+        const roomId = socketDetails?.roomId;
+
+        if (!roomId) {
+            console.error("Missing roomId for code-change");
+            return;
+        }
+
+        const room = await Room.findById(roomId);
+
+        if (room.creator.toString() == userID.toString()) {
+            const userToSendCode = socketHashMap[userId]
+
+            socket.to(userToSendCode.socketId).emit("sent-latest-code", { code })
+        }
+        else {
+            return;
+        }
     })
+
+    socket.on("code-change", ({ changes }) => {
+        const userId = socket.user.id;
+        const socketDetails = socketHashMap[userId];
+        const roomId = socketDetails?.roomId;
+
+        if (!roomId) {
+            console.error("Missing roomId for code-change");
+            return;
+        }
+
+        socket.to(roomId).emit("incomming-code-change", { changes });
+    });
 
     socket.on("add-node", ({ node }) => {
         const user = socket?.user;
