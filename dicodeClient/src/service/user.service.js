@@ -66,10 +66,16 @@ const getUserDetails = async () => {
 };
 
 
-const findFriends = async () => {
+const findFriends = async (text) => {
   try {
     const res = await fetch("http://localhost:8059/api/users/find-friends", {
-      method: "GET",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        text
+      }),
       credentials: "include"
     });
 

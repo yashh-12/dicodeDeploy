@@ -1,15 +1,63 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
+import useSocket from '../provider/SocketProvider';
 
 function CodeEditor({ role = "viewer", roomId }) {
-    const [code, setCode] = useState("// Start typing your code here...");
-    const editorRef = useRef(null); // for accessing the Monaco editor instance
+    const [code, setCode] = useState("");
+    const editorRef = useRef(null);            // Monaco editor instance
+    const monacoRef = useRef(null);            // Monaco library instance
+    const isRemoteChangeRef = useRef(false);   // To prevent infinite loop
 
+    const { socket } = useSocket();
+
+    // Handle incoming changes from others
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleIncomingChanges = ({ changes }) => {
+            
+            const editor = editorRef.current;
+            const monaco = monacoRef.current;
+
+            if (!editor || !monaco) return;
+            const model = editor.getModel();
+            if (!model) return;
+
+            isRemoteChangeRef.current = true;
+
+            model.pushEditOperations(
+                [],
+                changes.map(change => ({
+                    range: new monaco.Range(
+                        change.range.startLineNumber,
+                        change.range.startColumn,
+                        change.range.endLineNumber,
+                        change.range.endColumn
+                    ),
+                    text: change.text,
+                    forceMoveMarkers: true
+                })),
+                () => null
+            );
+
+            isRemoteChangeRef.current = false;
+        };
+
+        socket.on("incomming-code-change", handleIncomingChanges);
+
+        return () => {
+            socket.off("incomming-code-change", handleIncomingChanges);
+        };
+    }, [socket]);
+
+    // When editor is mounted
     const handleEditorDidMount = (editor, monaco) => {
         editorRef.current = editor;
+        monacoRef.current = monaco;
 
-        // Listen for content changes and log only diffs (deltas)
         editor.onDidChangeModelContent((event) => {
+            if (isRemoteChangeRef.current) return;
+
             const changes = event.changes.map(change => ({
                 range: {
                     startLineNumber: change.range.startLineNumber,
@@ -21,12 +69,12 @@ function CodeEditor({ role = "viewer", roomId }) {
                 rangeLength: change.rangeLength,
             }));
 
-            console.log("🔄 Code delta changes:", changes);
+            socket.emit("code-change", { changes });
         });
     };
 
     const handleEditorChange = (value) => {
-        setCode(value); // update full code state if needed
+        setCode(value);
     };
 
     return (

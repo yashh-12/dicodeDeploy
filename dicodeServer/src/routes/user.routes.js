@@ -14,7 +14,7 @@ const userRouter = Router();
 userRouter.post("/register", registerUser);
 userRouter.post("/login", loginUser);
 userRouter.post("/logout", isAuthenticated,logoutUser);
-userRouter.get("/find-friends",isAuthenticated, findFriends);
+userRouter.post("/find-friends",isAuthenticated, findFriends);
 userRouter.get("/", isAuthenticated,getUserDetail);
 
 export default userRouter;

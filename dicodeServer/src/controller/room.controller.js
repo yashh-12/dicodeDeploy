@@ -81,7 +81,6 @@ const leaveRoom = asyncHandler(async (req, res) => {
 });
 
 const getAllRooms = asyncHandler(async (req, res) => {
-    console.log("req came ");
 
     const userId = req.user.id;
 
@@ -102,8 +101,8 @@ const getRoomDetails = asyncHandler(async (req, res) => {
     }
 
     const room = await Room.findById(roomId)
-        .populate("creator", "username email avatar _id")
-        .populate("members.user", "username email avatar _id");
+        .populate("creator", "username name email avatar _id")
+        .populate("members.user", "username name email avatar _id");
 
     if (!room) {
         return res

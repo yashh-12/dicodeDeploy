@@ -28,8 +28,10 @@ import Friends from "./component/Friends.jsx";
 import { LoaderProvider } from "./provider/LoaderProvider.jsx";
 import Room from "./pages/Room.jsx";
 import roomLoader from "./loaders/roomLoader.js";
-// import Friends from "./component/Friends.jsx";
-// import AddFriend from "./component/AddFriend.jsx";
+import friendLoader from "./loaders/friendsLoader.js";
+import AddFriend from "./component/AddFriend.jsx";
+import addFriendsLoader from "./loaders/add-friendsLoader.js";
+import { SocketProvider } from "./provider/SocketProvider.jsx";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -41,8 +43,8 @@ const router = createBrowserRouter(
       <Route path="space" element={<Space />}>
         <Route index element={<Navigate to="rooms" replace />} />
         <Route path="rooms" element={<Rooms />} loader={roomsLoader} />
-        <Route path="friends" element={<Friends />} />
-        {/* <Route path="add-friend" element={<AddFriend />} /> */}
+        <Route path="friends" loader={friendLoader} element={<Friends />} />
+        <Route path="add-friend" loader={addFriendsLoader} element={<AddFriend />} />
       </Route>
 
       <Route path="room/:roomId" loader={roomLoader} element={<Room />} />
@@ -54,9 +56,11 @@ const router = createBrowserRouter(
 );
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <LoaderProvider>
-    <UserProvider>
-      <RouterProvider router={router} />
-    </UserProvider>
-  </LoaderProvider>
+  <SocketProvider>
+    <LoaderProvider>
+      <UserProvider>
+        <RouterProvider router={router} />
+      </UserProvider>
+    </LoaderProvider>
+  </SocketProvider>
 );

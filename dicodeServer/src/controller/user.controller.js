@@ -23,7 +23,7 @@ const registerUser = asyncHandler(async (req, res) => {
             .json(new apiResponse(400, {}, "Email is already registered"));
     }
 
-     if (existingUser.username == username) {
+    if (existingUser.username == username) {
         return res
             .status(400)
             .json(new apiResponse(400, {}, "Username is already registered"));
@@ -141,6 +141,12 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 const findFriends = asyncHandler(async (req, res) => {
     const currentUserId = req.user._id;
+    const { text } = req.body;
+
+    if (!text || text.trim() === "") {        
+        return res.status(200).json(new apiResponse(200, [], "No search text provided"));
+    }
+
 
     const currentUser = await User.findById(currentUserId).select("friends");
 
@@ -161,18 +167,28 @@ const findFriends = asyncHandler(async (req, res) => {
         ...Array.from(pendingIds)
     ];
 
+    const regex = new RegExp(text, "i"); // case-insensitive search
+
     const users = await User.find({
-        _id: { $nin: excludedIds }
+        _id: { $nin: excludedIds },
+        $or: [
+            { username: regex },
+            { email: regex }
+        ]
     }).select("_id name username email avatar");
+
+    console.log(users);
+
 
     return res.status(200).json(new apiResponse(200, users, "Users available to send friend request"));
 });
+
 
 const getUserDetail = asyncHandler(async (req, res) => {
     const userId = req?.user?._id;
 
     console.log("userId", userId);
-    
+
 
     const user = await User.findById(userId).select("-password -refreshToken -refreshToken");
 

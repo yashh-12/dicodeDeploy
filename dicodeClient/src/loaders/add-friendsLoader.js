@@ -1,9 +1,9 @@
-import { getFriendsList } from "../service/friendship.service";
+import { getPendingRequests } from "../service/friendship.service";
 
-const friendLoader = async () => {
-    try {
+const addFriendsLoader = async () => {
+   try {
 
-        const res = await getFriendsList();
+        const res = await getPendingRequests();
         if(res.success){
             return res;
         }
@@ -15,4 +15,5 @@ const friendLoader = async () => {
     }
 }
 
-export default friendLoader;
+
+export default addFriendsLoader
