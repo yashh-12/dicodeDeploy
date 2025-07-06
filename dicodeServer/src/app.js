@@ -130,11 +130,7 @@ server.on("connection", (socket) => {
 
             const creatorSocketId = socketHashMap[creatorId];
 
-            console.log("crea socket", creatorSocketId);
-
-
             if (creatorSocketId.socketId && creatorSocketId.roomId) {
-                console.log("this ran ");
 
                 const userData = await User.findById(currentUserId).select("-password -refreshToken -accessToken");
                 socket.to(creatorSocketId?.socketId).emit("give-req", { userData });
@@ -157,27 +153,26 @@ server.on("connection", (socket) => {
             return;
         }
 
-
         try {
             const socketDetails = socketHashMap[loggedInUser.id];
-            if (!socketDetails || !socketDetails.roomId) return;
+            if (!socketDetails?.roomId) return;
 
             const room = await Room.findById(socketDetails.roomId);
-
-            if (room.creator.toString() !== loggedInUser.id.toString()) return;
+            if (!room || room.creator.toString() !== loggedInUser.id.toString()) return;
 
             room.members = room.members.filter(member => member.user.toString() !== userId.toString());
-
             await room.save();
 
             const userToBeKicked = socketHashMap[userId];
 
-            server.to(userToBeKicked?.socketId).emit("navigate-room", {})
+            if (userToBeKicked?.socketId) {
+                const targetSocket = server.sockets.sockets.get(userToBeKicked.socketId);
 
-            const kickedSocket = Object.entries(socketHashMap).find(([_, value]) => value.userId === userId);
-            if (kickedSocket) {
-                const kickedSocketId = kickedSocket[0];
-                io.to(kickedSocketId).emit("kicked", { roomId: room._id });
+                if (targetSocket) {
+                    targetSocket.leave(room._id);
+                    targetSocket.emit("navigate-room", {});
+                    // targetSocket.emit("kicked", { roomId: room._id });
+                }
             }
 
             socket.to(socketDetails.roomId).emit("room-updated", { userId });
@@ -253,8 +248,14 @@ server.on("connection", (socket) => {
 
                 delete socketHashMap[userId];
 
-
                 server.to(roomId).emit("navigate-room", {});
+                console.log(`Creator (${userId}) left, room closed.`);
+
+                const socketsInRoom = await io.in(roomId).fetchSockets();
+                for (const s of socketsInRoom) {
+                    s.leave(roomId);
+                }
+
             } else {
                 room.members = room.members.filter(member =>
                     member.user.toString() !== userId.toString()
@@ -264,11 +265,10 @@ server.on("connection", (socket) => {
                 delete socketHashMap[userId];
 
                 server.to(roomId).emit("room-updated", { userId });
-
                 socket.emit("navigate-room", {});
-            }
 
-            socket.leave(roomId);
+                socket.leave(roomId);
+            }
         } catch (error) {
             console.error("Error in leave-room:", error.message);
         }
@@ -295,12 +295,8 @@ server.on("connection", (socket) => {
     });
 
     socket.on("discc", async () => {
-
-        console.log("Diconnected ", socket.user.email);
-
         const userId = socket.user.id;
         const socketDetails = socketHashMap[userId];
-
         if (!socketDetails) return;
 
         const { roomId } = socketDetails;
@@ -323,9 +319,13 @@ server.on("connection", (socket) => {
                     }];
                     await room.save();
 
-                    socket.to(roomId).emit("navigate-room", {});
+                    server.to(roomId).emit("navigate-room", {});
                     console.log("Meeting ended because host did not return");
-                    socket.leave(roomId)
+
+                    const socketsInRoom = await server.in(roomId).fetchSockets();
+                    for (const s of socketsInRoom) {
+                        s.leave(roomId);
+                    }
                 }
 
                 delete hostTimeoutMap[userId];
@@ -415,7 +415,6 @@ server.on("connection", (socket) => {
         socket.to(roomId).emit("incomming-code-change", { changes });
     });
 
-
     socket.on("add-node", async ({ node }) => {
         const userId = socket.user.id;
         const socketDetails = socketHashMap[userId];
@@ -426,7 +425,6 @@ server.on("connection", (socket) => {
 
         socket.to(roomId).emit("node-added", { node });
     });
-
 
     socket.on("delete-node", async ({ nodeId }) => {
         const userId = socket.user.id;
@@ -439,7 +437,6 @@ server.on("connection", (socket) => {
         socket.to(roomId).emit("node-deleted", { nodeId });
     });
 
-
     socket.on("rename-node", async ({ nodeId, label }) => {
         const userId = socket.user.id;
         const socketDetails = socketHashMap[userId];
@@ -450,7 +447,6 @@ server.on("connection", (socket) => {
 
         socket.to(roomId).emit("node-renamed", { nodeId, label });
     });
-
 
     socket.on("connect-nodes", async ({ edge }) => {
         const userId = socket.user.id;
@@ -463,7 +459,6 @@ server.on("connection", (socket) => {
         socket.to(roomId).emit("edge-connected", { edge });
     });
 
-
     socket.on("delete-edge", async ({ edgeId }) => {
         const userId = socket.user.id;
         const socketDetails = socketHashMap[userId];
@@ -474,7 +469,6 @@ server.on("connection", (socket) => {
 
         socket.to(roomId).emit("edge-deleted", { edgeId });
     });
-
 
 });
 

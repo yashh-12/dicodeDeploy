@@ -11,13 +11,13 @@ function Room() {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [activeTab, setActiveTab] = useState('editor');
-
+  const [count, setCount] = useState(0)
   const { roomId } = useParams();
   const { userData } = useUser();
   const data = useLoaderData();
 
   console.log(data);
-  
+
 
   const [roomDetails, setRoomDetails] = useState(data.data || {});
   const { socket } = useSocket();
@@ -39,6 +39,8 @@ function Room() {
         if (alreadyExists) return prev;
         return [...prev, userData];
       });
+
+      setCount(prev => prev + 1)
     });
 
     socket.on("room-updated", ({ userId }) => {
@@ -49,15 +51,11 @@ function Room() {
     });
 
     socket.on("navigate-room", () => {
-      socket.emit("")
       navigate("/space")
     })
 
 
     socket.on("joined-room", ({ user }) => {
-
-
-
       setRoomDetails((prev) => {
         const alreadyExists = prev.members.some(m => m?.user?._id === user?._id);
         if (alreadyExists) return prev;
@@ -89,11 +87,11 @@ function Room() {
 
     socket.on("role-changed", ({ userId, role }) => {
       console.log("Role changed");
-      
+
       setRoomDetails((prev) => {
         const updatedMembers = prev.members.map((member) => {
           if (member.user._id === userId) {
-            return { ...member, role }; 
+            return { ...member, role };
           }
           return member;
         });
@@ -196,7 +194,7 @@ function Room() {
               onClick={() => setShowJoinModal(true)}
               className="px-6 py-2 bg-yellow-500 text-black font-medium rounded-md hover:bg-yellow-400"
             >
-              Show Join Requests
+              Show Join Requests {count}
             </button>
           )}
           <button
