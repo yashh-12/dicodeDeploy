@@ -11,7 +11,7 @@ export const SocketProvider = ({ children }) => {
 
         const newSocket = io('http://localhost:3000', {
             transports: ['websocket'],
-            withCredentials:true,
+            withCredentials: true,
         });
 
         newSocket.on("connect", () => {
@@ -31,7 +31,7 @@ export const SocketProvider = ({ children }) => {
     }, []);
 
     return (
-        <SocketContext.Provider value={{  socket }}>
+        <SocketContext.Provider value={{ socket }}>
             {children}
         </SocketContext.Provider>
     );

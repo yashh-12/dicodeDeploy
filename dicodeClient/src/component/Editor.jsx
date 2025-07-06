@@ -4,9 +4,9 @@ import useSocket from '../provider/SocketProvider';
 
 function CodeEditor({ role = "viewer", roomId }) {
     const [code, setCode] = useState("");
-    const editorRef = useRef(null);            
-    const monacoRef = useRef(null);            
-    const isRemoteChangeRef = useRef(false);   
+    const editorRef = useRef(null);
+    const monacoRef = useRef(null);
+    const isRemoteChangeRef = useRef(false);
     const { socket } = useSocket();
 
     useEffect(() => {
@@ -45,20 +45,23 @@ function CodeEditor({ role = "viewer", roomId }) {
             const editor = editorRef.current;
             if (!editor) return;
 
-            const latestCode = editor.getValue();         
+            const latestCode = editor.getValue();
             socket.emit("got-code", { code: latestCode, userId });
         });
 
 
         socket.on("sent-latest-code", ({ code }) => {
+            console.log("got code ",code );
+            
             if (editorRef.current) {
                 const editor = editorRef.current;
 
                 const currentCode = editor.getValue();
                 if (currentCode !== code) {
-                    editor.setValue(code); 
+                    editor.setValue(code);
                 }
             }
+
             setCode(code);
         });
 

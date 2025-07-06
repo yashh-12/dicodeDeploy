@@ -73,14 +73,16 @@ server.use((socket, next) => {
 });
 
 server.on("connection", (socket) => {
-    // console.log("Connected to server via socket:", socket.id);
-    // console.log("Authenticated user:", socket.user);
+
 
     socket.on("register", ({ roomId }) => {
+
+        
         socketHashMap[socket.user.id] = {
             socketId: socket.id,
             roomId,
         };
+        console.log("registrd ", socketHashMap[socket.user.id] , socket.user);
     });
 
     socket.on("join-req", async () => {
@@ -113,9 +115,12 @@ server.on("connection", (socket) => {
                 return;
             }
 
-            const creatorSocketId = socketHashMap[creatorId]?.socketId;
+            const creatorSocketId = socketHashMap[creatorId];
 
-            if (creatorSocketId) {
+            console.log(creatorSocketId);
+
+
+            if (creatorSocketId.socketId && creatorSocketId.roomId) {
                 const userData = await User.findById(currentUserId).select("-password -refreshToken -accessToken");
                 socket.to(creatorSocketId).emit("give-req", { userData });
             } else {
@@ -124,6 +129,8 @@ server.on("connection", (socket) => {
 
         } catch (err) {
             console.error("Error handling join-req:", err.message);
+            socket.emit("no-host", {});
+
         }
     });
 
@@ -213,6 +220,45 @@ server.on("connection", (socket) => {
         }
     });
 
+    socket.on("leave-room", async () => {
+        try {
+            const userId = socket.user.id;
+            const socketDetails = socketHashMap[userId];
+            const roomId = socketDetails?.roomId;
+
+            const room = await Room.findById(roomId);
+            if (!room) return;
+
+            if (userId.toString() === room.creator.toString()) {
+                room.members = [{
+                    user: userId,
+                    role: "editor"
+                }];
+                await room.save();
+
+                delete socketHashMap[userId];
+
+
+                server.to(roomId).emit("navigate-room", {});
+            } else {
+                room.members = room.members.filter(member =>
+                    member.user.toString() !== userId.toString()
+                );
+                await room.save();
+
+                delete socketHashMap[userId];
+
+                server.to(roomId).emit("room-updated", { userId });
+
+                socket.emit("navigate-room", {});
+            }
+
+            socket.leave(roomId);
+        } catch (error) {
+            console.error("Error in leave-room:", error.message);
+        }
+    });
+
     socket.on("need-latest-code", async ({ }) => {
         const userId = socket.user.id;
         const socketDetails = socketHashMap[userId];
@@ -229,14 +275,20 @@ server.on("connection", (socket) => {
             return;
 
         const userToGetCode = socketHashMap[room.creator]
+        console.log("req sent to creator ");
 
-        socket.to(userToGetCode.socketId).emit("find-latest-code", { userId });
+        socket.to(userToGetCode?.socketId).emit("find-latest-code", { userId });
     });
+
+    socket.on("discc", () => {
+        console.log("discoonected ");
+
+    })
 
     socket.on("got-code", async ({ code, userId }) => {
 
-        console.log("code ",code);
-        
+        console.log("code ", code);
+
 
         const userID = socket.user.id;
         const socketDetails = socketHashMap[userID];
@@ -248,9 +300,11 @@ server.on("connection", (socket) => {
         }
 
         const room = await Room.findById(roomId);
+        console.log("thi srann");
 
         if (room.creator.toString() == userID.toString()) {
             const userToSendCode = socketHashMap[userId]
+            console.log(userToSendCode , " sent by ",userID);
 
             socket.to(userToSendCode.socketId).emit("sent-latest-code", { code })
         }

@@ -16,8 +16,7 @@ function Room() {
   const { userData } = useUser();
   const data = useLoaderData();
 
-  console.log(" data ", data);
-
+  let leaveTimeout = null;
 
   const [roomDetails, setRoomDetails] = useState(data.data || {});
   const { socket } = useSocket();
@@ -25,12 +24,13 @@ function Room() {
 
   const isCreator = roomDetails?.creator?._id === userData._id;
 
+
   useEffect(() => {
     if (!socket) return;
 
     socket.emit("register", { roomId });
     socket.emit("join-req", { roomId });
-    socket.emit("need-latest-code",{});
+    socket.emit("need-latest-code", {});
 
     socket.on("give-req", ({ userData }) => {
       setIncomingCalls((prev) => {
@@ -54,7 +54,7 @@ function Room() {
 
     socket.on("joined-room", ({ user }) => {
 
-  
+
 
       setRoomDetails((prev) => {
         const alreadyExists = prev.members.some(m => m?.user?._id === user?._id);
@@ -90,6 +90,7 @@ function Room() {
     });
 
     return () => {
+      socket.emit("discc", {})
       socket.off("give-req");
       socket.off("joined-room");
       socket.off("no-host");
@@ -110,6 +111,10 @@ function Room() {
 
   const handleKickUser = (userId) => {
     socket.emit("kick-room", { userId })
+  }
+
+  const handleLeaveRoom = () => {
+    socket.emit("leave-room", {});
   }
 
   return (
@@ -174,6 +179,13 @@ function Room() {
             className="px-6 py-2 bg-cyan-500 text-black font-medium rounded-md hover:bg-cyan-400"
           >
             View All Members
+          </button>
+
+          <button
+            onClick={handleLeaveRoom}
+            className="px-6 py-2 bg-red-500 text-black font-medium rounded-md hover:bg-red-400"
+          >
+            {isCreator ? "End Meeting" : "Leave Meeting"}
           </button>
         </div>
       )}
@@ -250,13 +262,30 @@ function Room() {
                   </div>
 
                   {isCreator && user?._id !== userData._id && (
-                    <button
-                      className="px-3 py-1 text-sm bg-red-500 hover:bg-red-400 text-white font-medium rounded-md"
-                      onClick={() => handleKickUser(user?._id)}
-                    >
-                      Kick
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        className="px-3 py-1 text-sm bg-red-500 hover:bg-red-400 text-white font-medium rounded-md"
+                        onClick={() => handleKickUser(user?._id)}
+                      >
+                        Kick
+                      </button>
+                      <button
+                        className="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-400 text-white font-medium rounded-md"
+                        onClick={() =>
+                          handleToggleRole(
+                            user?._id,
+                            roomDetails.members.find((m) => m.user._id === user._id)?.role
+                          )
+                        }
+                      >
+                        {roomDetails.members.find((m) => m.user._id === user._id)?.role ===
+                          'viewer'
+                          ? 'Make Editor'
+                          : 'Make Viewer'}
+                      </button>
+                    </div>
                   )}
+
 
                 </div>
               ))}
