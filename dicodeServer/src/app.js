@@ -30,6 +30,8 @@ const server = new Server(http, {
 });
 
 const socketHashMap = {};
+const hostTimeoutMap = {};
+
 
 const corsOptions = {
     origin: process.env.CORS,
@@ -72,17 +74,28 @@ server.use((socket, next) => {
     }
 });
 
+const isEditor = (room, userId) => {
+    const member = room?.members.find(m => m.user.toString() === userId.toString());
+    return member && member.role === 'editor';
+};
+
+
 server.on("connection", (socket) => {
 
-
     socket.on("register", ({ roomId }) => {
+        const userId = socket.user.id;
 
-        
-        socketHashMap[socket.user.id] = {
-            socketId: socket.id,
-            roomId,
-        };
-        console.log("registrd ", socketHashMap[socket.user.id] , socket.user);
+        socketHashMap[userId] = { socketId: socket.id, roomId, userId };
+
+        console.log("registerd ", socketHashMap[userId]);
+
+
+        const timeout = hostTimeoutMap[userId];
+        if (timeout) {
+            clearTimeout(timeout);
+            delete hostTimeoutMap[userId];
+            console.log("Host reconnected in time, timer cleared");
+        }
     });
 
     socket.on("join-req", async () => {
@@ -117,12 +130,14 @@ server.on("connection", (socket) => {
 
             const creatorSocketId = socketHashMap[creatorId];
 
-            console.log(creatorSocketId);
+            console.log("crea socket", creatorSocketId);
 
 
             if (creatorSocketId.socketId && creatorSocketId.roomId) {
+                console.log("this ran ");
+
                 const userData = await User.findById(currentUserId).select("-password -refreshToken -accessToken");
-                socket.to(creatorSocketId).emit("give-req", { userData });
+                socket.to(creatorSocketId?.socketId).emit("give-req", { userData });
             } else {
                 socket.emit("no-host", {});
             }
@@ -275,19 +290,98 @@ server.on("connection", (socket) => {
             return;
 
         const userToGetCode = socketHashMap[room.creator]
-        console.log("req sent to creator ");
 
         socket.to(userToGetCode?.socketId).emit("find-latest-code", { userId });
     });
 
-    socket.on("discc", () => {
-        console.log("discoonected ");
+    socket.on("discc", async () => {
 
-    })
+        console.log("Diconnected ", socket.user.email);
+
+        const userId = socket.user.id;
+        const socketDetails = socketHashMap[userId];
+
+        if (!socketDetails) return;
+
+        const { roomId } = socketDetails;
+
+        const room = await Room.findById(roomId);
+        if (!room) return;
+
+        const isCreator = room.creator.toString() === userId;
+
+        delete socketHashMap[userId];
+
+        if (isCreator) {
+            const timeout = setTimeout(async () => {
+                const stillMissing = !Object.values(socketHashMap).some(s => s.roomId === roomId && s.userId === userId);
+
+                if (stillMissing) {
+                    room.members = [{
+                        user: userId,
+                        role: "editor"
+                    }];
+                    await room.save();
+
+                    socket.to(roomId).emit("navigate-room", {});
+                    console.log("Meeting ended because host did not return");
+                    socket.leave(roomId)
+                }
+
+                delete hostTimeoutMap[userId];
+            }, 10000);
+
+            hostTimeoutMap[userId] = timeout;
+        }
+    });
+
+    socket.on("change-role", async ({ userId }) => {
+        try {
+            const currentUserId = socket?.user?.id;
+            const userDetails = socketHashMap[currentUserId];
+            const roomId = userDetails?.roomId;
+
+            if (!roomId) return;
+
+            const room = await Room.findById(roomId);
+            if (!room || room.creator.toString() !== currentUserId.toString()) return;
+
+            let changedRole = null;
+
+            room.members = room.members.map((member) => {
+                if (member.user.toString() === userId) {
+                    const newRole = member.role === "viewer" ? "editor" : "viewer";
+                    changedRole = newRole;
+                    return { ...member.toObject(), role: newRole };
+                }
+                return member;
+            });
+
+            await room.save();
+
+            const targetSocket = socketHashMap[userId];
+
+            if (targetSocket?.socketId) {
+                socket.to(targetSocket.socketId).emit("role-changed", {
+                    userId,
+                    role: changedRole
+                });
+            }
+
+            const creatorSocket = socketHashMap[room.creator];
+            console.log("semt to user ");
+
+            server.to(creatorSocket.socketId).emit("role-changed", {
+                userId,
+                role: changedRole
+            });
+
+        } catch (error) {
+            console.error("Error changing role:", error);
+        }
+    });
 
     socket.on("got-code", async ({ code, userId }) => {
-
-        console.log("code ", code);
 
 
         const userID = socket.user.id;
@@ -300,61 +394,87 @@ server.on("connection", (socket) => {
         }
 
         const room = await Room.findById(roomId);
-        console.log("thi srann");
 
         if (room.creator.toString() == userID.toString()) {
             const userToSendCode = socketHashMap[userId]
-            console.log(userToSendCode , " sent by ",userID);
+            socket.to(userToSendCode?.socketId).emit("sent-latest-code", { code })
+        }
 
-            socket.to(userToSendCode.socketId).emit("sent-latest-code", { code })
-        }
-        else {
-            return;
-        }
     })
 
-    socket.on("code-change", ({ changes }) => {
+    socket.on("code-change", async ({ changes }) => {
         const userId = socket.user.id;
         const socketDetails = socketHashMap[userId];
         const roomId = socketDetails?.roomId;
 
-        if (!roomId) {
-            console.error("Missing roomId for code-change");
-            return;
-        }
+        if (!roomId) return;
+
+        const room = await Room.findById(roomId);
+        if (!isEditor(room, userId)) return;
 
         socket.to(roomId).emit("incomming-code-change", { changes });
     });
 
-    socket.on("add-node", ({ node }) => {
-        const user = socket?.user;
-        const socketDetails = socketHashMap[user.id]
-        socket.to(socketDetails?.roomId).emit("node-added", { node })
-    })
 
-    socket.on("delete-node", ({ nodeId }) => {
-        const user = socket.user;
-        const socketDetails = socketHashMap[user.id]
-        socket.to(socketDetails?.roomId).emit("node-deleted", { nodeId })
-    })
+    socket.on("add-node", async ({ node }) => {
+        const userId = socket.user.id;
+        const socketDetails = socketHashMap[userId];
+        const roomId = socketDetails?.roomId;
 
-    socket.on("rename-node", ({ nodeId, label }) => {
-        const user = socket.user;
-        const socketDetails = socketHashMap[user.id]
-        socket.to(socketDetails?.roomId).emit("node-renamed", { nodeId, label })
-    })
+        const room = await Room.findById(roomId);
+        if (!isEditor(room, userId)) return;
 
-    socket.on("connect-nodes", ({ edge }) => {
-        const user = socket.user;
-        const socketDetails = socketHashMap[user.id]
-        socket.to(socketDetails?.roomId).emit("edge-connected", { edge })
-    })
+        socket.to(roomId).emit("node-added", { node });
+    });
 
-    socket.on("delete-edge", ({ edgeId }) => {
-        const user = socket.user;
-        const socketDetails = socketHashMap[user.id]
-        socket.to(socketDetails?.roomId).emit("edge-deleted", { edgeId })
-    })
+
+    socket.on("delete-node", async ({ nodeId }) => {
+        const userId = socket.user.id;
+        const socketDetails = socketHashMap[userId];
+        const roomId = socketDetails?.roomId;
+
+        const room = await Room.findById(roomId);
+        if (!isEditor(room, userId)) return;
+
+        socket.to(roomId).emit("node-deleted", { nodeId });
+    });
+
+
+    socket.on("rename-node", async ({ nodeId, label }) => {
+        const userId = socket.user.id;
+        const socketDetails = socketHashMap[userId];
+        const roomId = socketDetails?.roomId;
+
+        const room = await Room.findById(roomId);
+        if (!isEditor(room, userId)) return;
+
+        socket.to(roomId).emit("node-renamed", { nodeId, label });
+    });
+
+
+    socket.on("connect-nodes", async ({ edge }) => {
+        const userId = socket.user.id;
+        const socketDetails = socketHashMap[userId];
+        const roomId = socketDetails?.roomId;
+
+        const room = await Room.findById(roomId);
+        if (!isEditor(room, userId)) return;
+
+        socket.to(roomId).emit("edge-connected", { edge });
+    });
+
+
+    socket.on("delete-edge", async ({ edgeId }) => {
+        const userId = socket.user.id;
+        const socketDetails = socketHashMap[userId];
+        const roomId = socketDetails?.roomId;
+
+        const room = await Room.findById(roomId);
+        if (!isEditor(room, userId)) return;
+
+        socket.to(roomId).emit("edge-deleted", { edgeId });
+    });
+
 
 });
 

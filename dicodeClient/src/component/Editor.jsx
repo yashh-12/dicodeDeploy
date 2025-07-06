@@ -47,6 +47,7 @@ function CodeEditor({ role = "viewer", roomId }) {
 
             const latestCode = editor.getValue();
             socket.emit("got-code", { code: latestCode, userId });
+            setCode(latestCode);
         });
 
 

@@ -16,7 +16,8 @@ function Room() {
   const { userData } = useUser();
   const data = useLoaderData();
 
-  let leaveTimeout = null;
+  console.log(data);
+  
 
   const [roomDetails, setRoomDetails] = useState(data.data || {});
   const { socket } = useSocket();
@@ -48,6 +49,7 @@ function Room() {
     });
 
     socket.on("navigate-room", () => {
+      socket.emit("")
       navigate("/space")
     })
 
@@ -85,6 +87,25 @@ function Room() {
 
     });
 
+    socket.on("role-changed", ({ userId, role }) => {
+      console.log("Role changed");
+      
+      setRoomDetails((prev) => {
+        const updatedMembers = prev.members.map((member) => {
+          if (member.user._id === userId) {
+            return { ...member, role }; 
+          }
+          return member;
+        });
+
+        return {
+          ...prev,
+          members: updatedMembers,
+        };
+      });
+    });
+
+
     socket.on("no-host", () => {
       navigate("/space");
     });
@@ -115,6 +136,10 @@ function Room() {
 
   const handleLeaveRoom = () => {
     socket.emit("leave-room", {});
+  }
+
+  const handleToggleRole = (userId) => {
+    socket.emit("change-role", { userId })
   }
 
   return (
@@ -273,9 +298,7 @@ function Room() {
                         className="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-400 text-white font-medium rounded-md"
                         onClick={() =>
                           handleToggleRole(
-                            user?._id,
-                            roomDetails.members.find((m) => m.user._id === user._id)?.role
-                          )
+                            user?._id)
                         }
                       >
                         {roomDetails.members.find((m) => m.user._id === user._id)?.role ===
