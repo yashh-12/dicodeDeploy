@@ -17,6 +17,7 @@ import chatRouter from "./routes/chat.routes.js";
 import { getRoomDetails } from "./controller/room.controller.js";
 import Room from "./models/room.model.js";
 import User from "./models/user.model.js";
+import { AccessToken } from "livekit-server-sdk";
 
 dotenv.config({ path: ".env" });
 
@@ -114,14 +115,42 @@ server.on("connection", (socket) => {
 
             const creatorId = room.creator.toString();
 
-            const isMember = room.members.some(member =>
-                member.user._id.toString() === currentUserId
+            const isMember = room.members.some(
+                (member) => member.user._id.toString() === currentUserId
             );
 
             if (creatorId === currentUserId || isMember) {
-                const userData = await User.findById(currentUserId).select("-password -refreshToken -accessToken");
+                const userData = await User.findById(currentUserId).select(
+                    "-password -refreshToken -accessToken"
+                );
 
                 socket.join(roomId);
+
+                const token = new AccessToken(
+                    process.env.LIVEKIT_API_KEY,
+                    process.env.LIVEKIT_API_SECRET,
+                    {
+                        identity: currentUserId,
+                        name: userData.name || "Anonymous",
+                        metadata: JSON.stringify({
+                            avatar: userData.avatar,
+                            username: userData.username,
+                        }),
+                    }
+                );
+
+
+                token.addGrant({
+                    room: roomId,
+                    roomJoin: true,
+                    canPublish: true,
+                    canSubscribe: true,
+                    canPublishData: true,
+                });
+
+                const livekitToken = await token.toJwt();
+
+                socket.emit("livekit-token", { token: livekitToken });
 
                 server.to(roomId).emit("joined-room", { user: userData });
 
@@ -130,20 +159,69 @@ server.on("connection", (socket) => {
 
             const creatorSocketId = socketHashMap[creatorId];
 
-            if (creatorSocketId.socketId && creatorSocketId.roomId) {
-
-                const userData = await User.findById(currentUserId).select("-password -refreshToken -accessToken");
-                socket.to(creatorSocketId?.socketId).emit("give-req", { userData });
+            if (creatorSocketId?.socketId && creatorSocketId?.roomId) {
+                const userData = await User.findById(currentUserId).select(
+                    "-password -refreshToken -accessToken"
+                );
+                socket.to(creatorSocketId.socketId).emit("give-req", { userData });
             } else {
                 socket.emit("no-host", {});
             }
-
         } catch (err) {
             console.error("Error handling join-req:", err.message);
             socket.emit("no-host", {});
-
         }
     });
+
+    // socket.on("join-req", async () => {
+    //     try {
+    //         const currentUserId = socket.user.id;
+    //         const socketDetails = socketHashMap[currentUserId];
+    //         const roomId = socketDetails?.roomId;
+
+    //         if (!roomId) {
+    //             console.error("Room ID not found for user in socketHashMap");
+    //             return;
+    //         }
+
+    //         const room = await Room.findById(roomId).populate("members.user");
+    //         if (!room) return;
+
+    //         const creatorId = room.creator.toString();
+
+    //         const isMember = room.members.some(member =>
+    //             member.user._id.toString() === currentUserId
+    //         );
+
+    //         if (creatorId === currentUserId || isMember) {
+    //             const userData = await User.findById(currentUserId).select("-password -refreshToken -accessToken");
+
+    //             socket.join(roomId);
+
+
+    //             socket.emit("livekit-token",{})
+
+    //             server.to(roomId).emit("joined-room", { user: userData });
+
+    //             return;
+    //         }
+
+    //         const creatorSocketId = socketHashMap[creatorId];
+
+    //         if (creatorSocketId.socketId && creatorSocketId.roomId) {
+
+    //             const userData = await User.findById(currentUserId).select("-password -refreshToken -accessToken");
+    //             socket.to(creatorSocketId?.socketId).emit("give-req", { userData });
+    //         } else {
+    //             socket.emit("no-host", {});
+    //         }
+
+    //     } catch (err) {
+    //         console.error("Error handling join-req:", err.message);
+    //         socket.emit("no-host", {});
+
+    //     }
+    // });
 
     socket.on("kick-room", async ({ userId }) => {
         const loggedInUser = socket.user;

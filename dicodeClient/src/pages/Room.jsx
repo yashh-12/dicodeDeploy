@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLoaderData, useNavigate, useParams } from 'react-router-dom';
 import useUser from '../provider/UserProvider';
 import Editor from '../component/Editor';
 import Canvas from '../component/Canvas';
 import WaitingScreen from '../component/WaitingScreen';
 import useSocket from '../provider/SocketProvider';
+import { Room as LiveKitRoom, RoomEvent } from 'livekit-client';
+import { MdMic, MdMicOff } from 'react-icons/md';
+import { useReactFlow } from '@xyflow/react';
 
 function Room() {
   const [incommingCalls, setIncomingCalls] = useState([]);
@@ -15,11 +18,10 @@ function Room() {
   const { roomId } = useParams();
   const { userData } = useUser();
   const data = useLoaderData();
-
-  console.log(data);
-
-
+  const LiveKitRoomRef = useRef(null);
+  const [muted, setMuted] = useState(true)
   const [roomDetails, setRoomDetails] = useState(data.data || {});
+  const [speakers, setSpeakers] = useState([]);
   const { socket } = useSocket();
   const navigate = useNavigate();
 
@@ -53,7 +55,6 @@ function Room() {
     socket.on("navigate-room", () => {
       navigate("/space")
     })
-
 
     socket.on("joined-room", ({ user }) => {
       setRoomDetails((prev) => {
@@ -103,10 +104,49 @@ function Room() {
       });
     });
 
-
     socket.on("no-host", () => {
       navigate("/space");
     });
+
+    socket.on("livekit-token", async ({ token }) => {
+      const room = new LiveKitRoom({ adaptiveStream: true, dynacast: true });
+      LiveKitRoomRef.current = room;
+
+      room.on(RoomEvent.ActiveSpeakersChanged, (list) => {
+        setSpeakers(list.map(p => {
+          let metadata = {};
+          try {
+            metadata = JSON.parse(p.metadata || '{}');
+          } catch (err) {
+            console.warn('Invalid metadata JSON for participant', p.identity);
+          }
+
+          return {
+            id: p.identity,
+            name: p.name || 'Anonymous',
+            avatar: metadata.avatar || '',
+          };
+        }));
+      });
+
+
+      room.on(RoomEvent.TrackSubscribed, (track) => {
+        if (track.kind === 'audio') {
+          const el = track.attach();
+          el.autoplay = true;
+          document.body.appendChild(el);
+        }
+      });
+
+      try {
+        await room.connect(import.meta.env.VITE_LIVEKIT_WEB_URL, token);
+        await room.localParticipant.setMicrophoneEnabled(false);
+        setMuted(true);
+      } catch (err) {
+        console.error("LiveKit connection failed:", err);
+      }
+    });
+
 
     return () => {
       socket.emit("discc", {})
@@ -140,6 +180,18 @@ function Room() {
     socket.emit("change-role", { userId })
   }
 
+  const handleToggleMic = async () => {
+    const room = LiveKitRoomRef.current;
+    if (!room) return;
+
+    setMuted(prevMuted => {
+      room.localParticipant.setMicrophoneEnabled(prevMuted);
+      return !prevMuted;
+    });
+  };
+
+
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white p-4 relative">
       {/* Header */}
@@ -147,6 +199,27 @@ function Room() {
         <h1 className="text-2xl font-semibold text-cyan-400">
           Room: {roomDetails.name}
         </h1>
+
+        {speakers.length > 0 && (
+          <div className="mt-4 flex items-center gap-4 flex-wrap">
+            {speakers.map((speaker) => (
+              <div
+                key={speaker.id}
+                className="flex items-center gap-2 px-3 py-1 bg-[#1e293b] rounded-full border border-cyan-400/30"
+              >
+                {speaker.avatar && (
+                  <img
+                    src={speaker.avatar}
+                    alt={speaker.name}
+                    className="w-6 h-6 rounded-full"
+                  />
+                )}
+                <span className="text-sm text-cyan-200">{speaker.name}</span>
+                <span className="animate-ping w-2 h-2 rounded-full bg-green-400"></span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {isMember && (
           <div className="flex items-center gap-2">
@@ -189,14 +262,23 @@ function Room() {
       {/* Action Buttons */}
       {isMember && (
         <div className="mt-8 flex justify-center gap-4">
+
+          <button
+            onClick={handleToggleMic}
+            className={`px-6 py-2 ${muted ? "bg-red-500 hover:bg-red-400" : "bg-green-500 hover:bg-green-400"} text-black font-medium rounded-md`}
+          >
+            {muted ? <MdMicOff size={20} /> : <MdMic size={20} />}
+          </button>
+
           {isCreator && (
             <button
               onClick={() => setShowJoinModal(true)}
               className="px-6 py-2 bg-yellow-500 text-black font-medium rounded-md hover:bg-yellow-400"
             >
-              Show Join Requests {count}
+              Show Join Requests
             </button>
           )}
+
           <button
             onClick={() => setShowMembersModal(true)}
             className="px-6 py-2 bg-cyan-500 text-black font-medium rounded-md hover:bg-cyan-400"
@@ -210,6 +292,7 @@ function Room() {
           >
             {isCreator ? "End Meeting" : "Leave Meeting"}
           </button>
+
         </div>
       )}
 
