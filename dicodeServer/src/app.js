@@ -18,6 +18,7 @@ import { getRoomDetails } from "./controller/room.controller.js";
 import Room from "./models/room.model.js";
 import User from "./models/user.model.js";
 import { AccessToken } from "livekit-server-sdk";
+import { RoomServiceClient } from "livekit-server-sdk";
 
 dotenv.config({ path: ".env" });
 
@@ -75,18 +76,14 @@ server.use((socket, next) => {
     }
 });
 
-const isEditor = (room, userId) => {
-    const member = room?.members.find(m => m.user.toString() === userId.toString());
-    return member && member.role === 'editor';
-};
-
+const livekitClient = new RoomServiceClient(process.env.LIVEKIT_WEB_URL, process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET)
 
 server.on("connection", (socket) => {
 
     socket.on("register", ({ roomId }) => {
         const userId = socket.user.id;
 
-        socketHashMap[userId] = { socketId: socket.id, roomId, userId };
+        socketHashMap[userId] = { socketId: socket.id, roomId, userId, role: "viewer" };
 
         console.log("registerd ", socketHashMap[userId]);
 
@@ -120,6 +117,11 @@ server.on("connection", (socket) => {
             );
 
             if (creatorId === currentUserId || isMember) {
+
+                if (creatorId === currentUserId) {
+                    socketHashMap[currentUserId] = { ...socketDetails, role: "editor" }
+                }
+
                 const userData = await User.findById(currentUserId).select(
                     "-password -refreshToken -accessToken"
                 );
@@ -159,7 +161,7 @@ server.on("connection", (socket) => {
 
             const creatorSocketId = socketHashMap[creatorId];
 
-            if (creatorSocketId?.socketId && creatorSocketId?.roomId) {
+            if (creatorSocketId?.socketId && creatorSocketId?.roomId == socketDetails?.roomId) {
                 const userData = await User.findById(currentUserId).select(
                     "-password -refreshToken -accessToken"
                 );
@@ -235,6 +237,7 @@ server.on("connection", (socket) => {
             const socketDetails = socketHashMap[loggedInUser.id];
             if (!socketDetails?.roomId) return;
 
+
             const room = await Room.findById(socketDetails.roomId);
             if (!room || room.creator.toString() !== loggedInUser.id.toString()) return;
 
@@ -253,7 +256,7 @@ server.on("connection", (socket) => {
                 }
             }
 
-            socket.to(socketDetails.roomId).emit("room-updated", { userId });
+            server.to(socketDetails.roomId).emit("room-updated", { userId });
 
         } catch (error) {
             console.error("Error kicking user from room:", error);
@@ -310,7 +313,7 @@ server.on("connection", (socket) => {
 
     socket.on("leave-room", async () => {
         try {
-            const userId = socket.user.id;
+            const userId = socket?.user?.id;
             const socketDetails = socketHashMap[userId];
             const roomId = socketDetails?.roomId;
 
@@ -326,10 +329,18 @@ server.on("connection", (socket) => {
 
                 delete socketHashMap[userId];
 
+
                 server.to(roomId).emit("navigate-room", {});
                 console.log(`Creator (${userId}) left, room closed.`);
 
-                const socketsInRoom = await io.in(roomId).fetchSockets();
+                try {
+                    await livekitClient.deleteRoom(roomId);
+
+                } catch (err) {
+                    console.error("room deleted participants are disconnected from LiveKit:", err);
+                }
+
+                const socketsInRoom = await server.in(roomId).fetchSockets();
                 for (const s of socketsInRoom) {
                     s.leave(roomId);
                 }
@@ -341,6 +352,15 @@ server.on("connection", (socket) => {
                 await room.save();
 
                 delete socketHashMap[userId];
+
+                try {
+                    await livekitClient.removeParticipant(roomId, userId)
+                    console.log("participent leaved room ", socket.user.id);
+
+                } catch (error) {
+                    console.log("error removing participent", error.message);
+
+                }
 
                 server.to(roomId).emit("room-updated", { userId });
                 socket.emit("navigate-room", {});
@@ -388,7 +408,9 @@ server.on("connection", (socket) => {
 
         if (isCreator) {
             const timeout = setTimeout(async () => {
-                const stillMissing = !Object.values(socketHashMap).some(s => s.roomId === roomId && s.userId === userId);
+                const stillMissing = !Object.values(socketHashMap).some(
+                    s => s.roomId === roomId && s.userId === userId
+                );
 
                 if (stillMissing) {
                     room.members = [{
@@ -399,6 +421,13 @@ server.on("connection", (socket) => {
 
                     server.to(roomId).emit("navigate-room", {});
                     console.log("Meeting ended because host did not return");
+
+                    try {
+                        await livekitClient.deleteRoom(roomId);
+
+                    } catch (err) {
+                        console.error("Room successfuult removed from LiveKit:", err);
+                    }
 
                     const socketsInRoom = await server.in(roomId).fetchSockets();
                     for (const s of socketsInRoom) {
@@ -439,15 +468,19 @@ server.on("connection", (socket) => {
 
             const targetSocket = socketHashMap[userId];
 
+            socketHashMap[userId] = { ...targetSocket, role: changedRole }
+
             if (targetSocket?.socketId) {
                 socket.to(targetSocket.socketId).emit("role-changed", {
                     userId,
                     role: changedRole
                 });
+                socket.to(targetSocket.socketId).emit("role-updated", {
+                    role: changedRole
+                });
             }
 
             const creatorSocket = socketHashMap[room.creator];
-            console.log("semt to user ");
 
             server.to(creatorSocket.socketId).emit("role-changed", {
                 userId,
@@ -480,73 +513,54 @@ server.on("connection", (socket) => {
 
     })
 
-    socket.on("code-change", async ({ changes }) => {
+    socket.on("code-change", ({ changes }) => {
         const userId = socket.user.id;
-        const socketDetails = socketHashMap[userId];
-        const roomId = socketDetails?.roomId;
+        const details = socketHashMap[userId];
+        if (!details?.roomId || details.role !== "editor") return;
 
-        if (!roomId) return;
-
-        const room = await Room.findById(roomId);
-        if (!isEditor(room, userId)) return;
-
-        socket.to(roomId).emit("incomming-code-change", { changes });
+        socket.to(details.roomId).emit("incomming-code-change", { changes });
     });
 
-    socket.on("add-node", async ({ node }) => {
+    socket.on("add-node", ({ node }) => {
         const userId = socket.user.id;
-        const socketDetails = socketHashMap[userId];
-        const roomId = socketDetails?.roomId;
+        const details = socketHashMap[userId];
+        if (!details?.roomId || details.role !== "editor") return;
 
-        const room = await Room.findById(roomId);
-        if (!isEditor(room, userId)) return;
-
-        socket.to(roomId).emit("node-added", { node });
+        socket.to(details.roomId).emit("node-added", { node });
     });
 
-    socket.on("delete-node", async ({ nodeId }) => {
+    socket.on("delete-node", ({ nodeId }) => {
         const userId = socket.user.id;
-        const socketDetails = socketHashMap[userId];
-        const roomId = socketDetails?.roomId;
+        const details = socketHashMap[userId];
+        if (!details?.roomId || details.role !== "editor") return;
 
-        const room = await Room.findById(roomId);
-        if (!isEditor(room, userId)) return;
-
-        socket.to(roomId).emit("node-deleted", { nodeId });
+        socket.to(details.roomId).emit("node-deleted", { nodeId });
     });
 
-    socket.on("rename-node", async ({ nodeId, label }) => {
+    socket.on("rename-node", ({ nodeId, label }) => {
         const userId = socket.user.id;
-        const socketDetails = socketHashMap[userId];
-        const roomId = socketDetails?.roomId;
+        const details = socketHashMap[userId];
+        if (!details?.roomId || details.role !== "editor") return;
 
-        const room = await Room.findById(roomId);
-        if (!isEditor(room, userId)) return;
-
-        socket.to(roomId).emit("node-renamed", { nodeId, label });
+        socket.to(details.roomId).emit("node-renamed", { nodeId, label });
     });
 
-    socket.on("connect-nodes", async ({ edge }) => {
+    socket.on("connect-nodes", ({ edge }) => {
         const userId = socket.user.id;
-        const socketDetails = socketHashMap[userId];
-        const roomId = socketDetails?.roomId;
+        const details = socketHashMap[userId];
+        if (!details?.roomId || details.role !== "editor") return;
 
-        const room = await Room.findById(roomId);
-        if (!isEditor(room, userId)) return;
-
-        socket.to(roomId).emit("edge-connected", { edge });
+        socket.to(details.roomId).emit("edge-connected", { edge });
     });
 
-    socket.on("delete-edge", async ({ edgeId }) => {
+    socket.on("delete-edge", ({ edgeId }) => {
         const userId = socket.user.id;
-        const socketDetails = socketHashMap[userId];
-        const roomId = socketDetails?.roomId;
+        const details = socketHashMap[userId];
+        if (!details?.roomId || details.role !== "editor") return;
 
-        const room = await Room.findById(roomId);
-        if (!isEditor(room, userId)) return;
-
-        socket.to(roomId).emit("edge-deleted", { edgeId });
+        socket.to(details.roomId).emit("edge-deleted", { edgeId });
     });
+
 
 });
 

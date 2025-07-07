@@ -24,7 +24,7 @@ function Room() {
   const [speakers, setSpeakers] = useState([]);
   const { socket } = useSocket();
   const navigate = useNavigate();
-
+  const [notification, setNotification] = useState("")
   const isCreator = roomDetails?.creator?._id === userData._id;
 
 
@@ -87,7 +87,6 @@ function Room() {
     });
 
     socket.on("role-changed", ({ userId, role }) => {
-      console.log("Role changed");
 
       setRoomDetails((prev) => {
         const updatedMembers = prev.members.map((member) => {
@@ -102,6 +101,19 @@ function Room() {
           members: updatedMembers,
         };
       });
+    });
+
+    socket.on("role-updated", ({ role }) => {
+      if (role == "editor") {
+        setNotification("Your are promoted as an Editor")
+      } else {
+        setNotification("You are demoted as a Viewer")
+      }
+
+      setTimeout(() => {
+        setNotification("")
+      }, 2500)
+
     });
 
     socket.on("no-host", () => {
@@ -146,7 +158,6 @@ function Room() {
         console.error("LiveKit connection failed:", err);
       }
     });
-
 
     return () => {
       socket.emit("discc", {})
@@ -199,6 +210,8 @@ function Room() {
         <h1 className="text-2xl font-semibold text-cyan-400">
           Room: {roomDetails.name}
         </h1>
+
+        {notification ? notification : ""}
 
         {speakers.length > 0 && (
           <div className="mt-4 flex items-center gap-4 flex-wrap">
@@ -256,7 +269,7 @@ function Room() {
           </div>
         </div>
       ) : (
-        <WaitingScreen roomId={roomId} />
+        <WaitingScreen userdata={roomDetails.creator} />
       )}
 
       {/* Action Buttons */}

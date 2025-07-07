@@ -30,9 +30,7 @@ export default function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-40 flex flex-col justify-between bg-[#0b0b0b] border-r border-blue-400/10 w-20 sm:w-56 py-6 px-2 sm:px-4 shadow-[0_0_20px_#3b82f620]">
 
-      {/* Top: Logo + Navigation */}
       <div>
-        {/* Logo with blue glow */}
         <NavLink
           to="/space/rooms"
           className="mb-8 flex items-center justify-center sm:justify-start"
@@ -47,7 +45,6 @@ export default function Sidebar() {
           </div>
         </NavLink>
 
-        {/* Navigation Links */}
         <nav className="flex flex-col gap-2">
           {navItems.map(({ label, path, icon }) => (
             <NavLink
@@ -68,7 +65,6 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* Bottom: Logout Button */}
       <div className="mt-6">
         <button
           onClick={handleLogout}

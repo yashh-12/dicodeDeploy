@@ -74,7 +74,6 @@ function CodeEditor({ role = "viewer", roomId }) {
         };
     }, [socket]);
 
-    // When editor is mounted
     const handleEditorDidMount = (editor, monaco) => {
         editorRef.current = editor;
         monacoRef.current = monaco;

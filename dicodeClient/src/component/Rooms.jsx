@@ -2,9 +2,8 @@ import React, { useState } from "react";
 import Modal from "react-modal";
 import { useLoaderData, NavLink, useNavigate } from "react-router-dom";
 import { createRoom, deleteRoom } from "../service/room.service";
-import { FaTrashAlt } from "react-icons/fa"; // FA version of Trash
+import { FaTrashAlt } from "react-icons/fa"; 
 
-// Required for accessibility
 Modal.setAppElement("#root");
 
 function Rooms() {
@@ -39,7 +38,6 @@ function Rooms() {
     return (
         <div className="p-6 text-white flex flex-col gap-6">
 
-            {/* Header + Add Button */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 className="text-3xl font-bold text-blue-400 drop-shadow-[0_0_8px_#3b82f6]">Your Rooms</h1>
                 <button
@@ -50,7 +48,6 @@ function Rooms() {
                 </button>
             </div>
 
-            {/* Room List */}
             {rooms.length === 0 ? (
                 <div className="text-gray-400 text-center mt-16 italic text-lg animate-pulse">
                     No rooms yet — hit the “Add Room” button to get started!
@@ -62,7 +59,6 @@ function Rooms() {
                             key={room._id}
                             className="relative group p-4 rounded-2xl border border-blue-500/30 bg-[#0c0c0c] hover:border-blue-400/80 transition-all duration-300 shadow-md hover:shadow-[0_0_20px_#3b82f640] flex flex-col gap-2"
                         >
-                            {/* Room Link */}
                             <NavLink
                                 to={`/room/${room._id}`}
                                 className="flex flex-col gap-1 group-hover:translate-x-1 transition"
@@ -76,7 +72,6 @@ function Rooms() {
                                 </p>
                             </NavLink>
 
-                            {/* Delete Button (× symbol) */}
                             <button
                                 onClick={() => handleDeleteRoom(room._id)}
                                 className="absolute top-2 right-3 text-blue-400 hover:text-red-400 hover:scale-110 transition text-xl font-bold"
@@ -86,14 +81,12 @@ function Rooms() {
 
                             </button>
 
-                            {/* Neon glow line */}
                             <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-400/0 group-hover:bg-blue-400/20 transition-all rounded-b-2xl" />
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* Modal for Adding Room */}
             <Modal
                 isOpen={modalIsOpen}
                 onRequestClose={closeModal}

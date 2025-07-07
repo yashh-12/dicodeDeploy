@@ -33,6 +33,23 @@ const cancelFriendRequest = async (to) => {
   }
 };
 
+const removeFriend = async (friendId) => {
+  try {
+    const res = await fetch("http://localhost:8059/api/friends/remove", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "include",
+      body: JSON.stringify({ friendId })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error("Error canceling friend request:", err);
+    return { success: false, error: err.message };
+  }
+};
+
 
 const acceptFriendRequest = async (from) => {
   try {
@@ -103,5 +120,6 @@ export {
   acceptFriendRequest,
   rejectFriendRequest,
   getPendingRequests,
-  getFriendsList
+  getFriendsList,
+  removeFriend
 };

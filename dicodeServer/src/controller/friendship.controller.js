@@ -35,7 +35,6 @@ export const sendFriendRequest = asyncHandler(async (req, res) => {
   return res.status(200).json(new apiResponse(200, request, "Friend request sent"));
 });
 
-
 export const cancelFriendRequest = asyncHandler(async (req, res) => {
   const from = req.user._id;
   const { to } = req.body;
@@ -51,7 +50,6 @@ export const cancelFriendRequest = asyncHandler(async (req, res) => {
 
   return res.status(200).json(new apiResponse(200, {}, "Friend request cancelled"));
 });
-
 
 export const acceptFriendRequest = asyncHandler(async (req, res) => {
   const to = req.user._id;
@@ -76,7 +74,6 @@ export const acceptFriendRequest = asyncHandler(async (req, res) => {
   return res.status(200).json(new apiResponse(200, {}, "Friend request accepted"));
 });
 
-
 export const rejectFriendRequest = asyncHandler(async (req, res) => {
   const to = req.user._id;
   const { from } = req.body;
@@ -92,7 +89,6 @@ export const rejectFriendRequest = asyncHandler(async (req, res) => {
   return res.status(200).json(new apiResponse(200, {}, "Friend request rejected"));
 });
 
-
 export const getPendingRequests = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
@@ -102,11 +98,43 @@ export const getPendingRequests = asyncHandler(async (req, res) => {
   return res.status(200).json(new apiResponse(200, requests, "Pending requests received"));
 });
 
-
 export const getFriendsList = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).populate("friends", "name username email avatar");
 
   return res.status(200).json(new apiResponse(200, user.friends, "Friends list fetched"));
+});
+
+export const removeFriend = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { friendId } = req.body;
+
+  if (!isValidObjectId(friendId)) {
+    return res.status(400).json(new apiResponse(400, {}, "Invalid friend ID"));
+  }
+
+  const user = await User.findById(userId);
+  const friend = await User.findById(friendId);
+
+  if (!user || !friend) {
+    return res.status(404).json(new apiResponse(404, {}, "User not found"));
+  }
+
+  if (!user.friends.includes(friendId)) {
+    return res.status(400).json(new apiResponse(400, {}, "You are not friends with this user"));
+  }
+
+  await User.findByIdAndUpdate(userId, { $pull: { friends: friendId } });
+  await User.findByIdAndUpdate(friendId, { $pull: { friends: userId } });
+
+  await FriendShip.findOneAndDelete({
+    $or: [
+      { from: userId, to: friendId },
+      { from: friendId, to: userId }
+    ],
+    status: "accepted"
+  });
+
+  return res.status(200).json(new apiResponse(200, {}, "Friend removed successfully"));
 });
 
 

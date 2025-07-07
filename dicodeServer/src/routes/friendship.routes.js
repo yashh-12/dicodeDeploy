@@ -5,7 +5,8 @@ import {
   acceptFriendRequest,
   rejectFriendRequest,
   getPendingRequests,
-  getFriendsList
+  getFriendsList,
+  removeFriend
 } from "../controller/friendship.controller.js";
 
 import isAuthenticated from "../middlewares/authMid.js";
@@ -23,6 +24,8 @@ friendshipRouter.post("/accept", acceptFriendRequest);
 friendshipRouter.post("/reject", rejectFriendRequest);
 
 friendshipRouter.get("/pending", getPendingRequests);
+
+friendshipRouter.post("/remove", removeFriend);
 
 friendshipRouter.get("/list", getFriendsList);
 

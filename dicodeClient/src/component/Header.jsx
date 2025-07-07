@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import logo from "/code.png"; // Adjust path as needed
+import logo from "/code.png"; 
 
 const Header = () => {
   const location = useLocation();
@@ -13,7 +13,7 @@ const Header = () => {
 
   return (
     <header className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between px-4 sm:px-8">
-      {/* Logo */}
+
       <Link to="/" className="flex items-center gap-2">
         <img
           src={logo}
@@ -22,7 +22,6 @@ const Header = () => {
         />
       </Link>
 
-      {/* Navigation */}
       <nav className="flex gap-6 text-sm sm:text-base font-medium">
         {links.map(({ name, to, color }) => (
           <Link
