@@ -17,7 +17,7 @@ import chatRouter from "./routes/chat.routes.js";
 import { getRoomDetails } from "./controller/room.controller.js";
 import Room from "./models/room.model.js";
 import User from "./models/user.model.js";
-import { AccessToken } from "livekit-server-sdk";
+import { AccessToken, TrackSource, trackSourceToString } from "livekit-server-sdk";
 import { RoomServiceClient } from "livekit-server-sdk";
 
 dotenv.config({ path: ".env" });
@@ -81,97 +81,113 @@ const livekitClient = new RoomServiceClient(process.env.LIVEKIT_WEB_URL, process
 server.on("connection", (socket) => {
 
     socket.on("register", ({ roomId }) => {
-        const userId = socket.user.id;
+        const userId = socket?.user?.id;
+        if (!userId || !roomId) return;
 
-        socketHashMap[userId] = { socketId: socket.id, roomId, userId, role: "viewer" };
+        socketHashMap[userId] = {
+            socketId: socket?.id,
+            roomId,
+            userId,
+            role: "viewer",
+        };
 
-        console.log("registerd ", socketHashMap[userId]);
-
-
-        const timeout = hostTimeoutMap[userId];
+        const timeout = hostTimeoutMap?.[userId];
         if (timeout) {
             clearTimeout(timeout);
             delete hostTimeoutMap[userId];
-            console.log("Host reconnected in time, timer cleared");
         }
     });
 
     socket.on("join-req", async () => {
         try {
-            const currentUserId = socket.user.id;
-            const socketDetails = socketHashMap[currentUserId];
-            const roomId = socketDetails?.roomId;
+            const currentUserId = socket?.user?.id;
+            if (!currentUserId) return;
 
+            const socketDetails = socketHashMap?.[currentUserId];
+            const roomId = socketDetails?.roomId;
             if (!roomId) {
                 console.error("Room ID not found for user in socketHashMap");
                 return;
             }
 
-            const room = await Room.findById(roomId).populate("members.user");
+            const room = await Room.findById(roomId)?.populate?.("members.user");
             if (!room) return;
 
-            const creatorId = room.creator.toString();
+            const creatorId = room?.creator?.toString?.();
+            if (!creatorId) return;
 
-            const isMember = room.members.some(
-                (member) => member.user._id.toString() === currentUserId
+            const isMember = room?.members?.some?.(
+                (member) => member?.user?._id?.toString?.() === currentUserId
             );
 
             if (creatorId === currentUserId || isMember) {
-
                 if (creatorId === currentUserId) {
-                    socketHashMap[currentUserId] = { ...socketDetails, role: "editor" }
+                    socketHashMap[currentUserId] = { ...socketDetails, role: "editor" };
                 }
 
-                const userData = await User.findById(currentUserId).select(
+                const userData = await User.findById(currentUserId)?.select?.(
                     "-password -refreshToken -accessToken"
                 );
+                if (!userData) return;
 
-                socket.join(roomId);
+                socket.join?.(roomId);
 
                 const token = new AccessToken(
                     process.env.LIVEKIT_API_KEY,
                     process.env.LIVEKIT_API_SECRET,
                     {
                         identity: currentUserId,
-                        name: userData.name || "Anonymous",
+                        name: userData?.name || "Anonymous",
                         metadata: JSON.stringify({
-                            avatar: userData.avatar,
-                            username: userData.username,
+                            avatar: userData?.avatar,
+                            username: userData?.username,
                         }),
                     }
                 );
 
+                const sources = [TrackSource.CAMERA, TrackSource.MICROPHONE];
+
+                if (creatorId === currentUserId) {
+                    sources.push(TrackSource.SCREEN_SHARE);
+                }
 
                 token.addGrant({
                     room: roomId,
                     roomJoin: true,
                     canPublish: true,
+                    canPublishSources: sources,
                     canSubscribe: true,
                     canPublishData: true,
                 });
 
-                const livekitToken = await token.toJwt();
+                const livekitToken = await token.toJwt?.();
+                if (!livekitToken) return;
 
-                socket.emit("livekit-token", { token: livekitToken });
+                socket.emit?.("livekit-token", { token: livekitToken });
 
-                server.to(roomId).emit("joined-room", { user: userData });
+                server.to?.(roomId)?.emit?.("joined-room", { user: userData });
 
                 return;
             }
 
-            const creatorSocketId = socketHashMap[creatorId];
+            const creatorSocketId = socketHashMap?.[creatorId];
 
-            if (creatorSocketId?.socketId && creatorSocketId?.roomId == socketDetails?.roomId) {
-                const userData = await User.findById(currentUserId).select(
+            if (
+                creatorSocketId?.socketId &&
+                creatorSocketId?.roomId === socketDetails?.roomId
+            ) {
+                const userData = await User.findById(currentUserId)?.select?.(
                     "-password -refreshToken -accessToken"
                 );
-                socket.to(creatorSocketId.socketId).emit("give-req", { userData });
+                if (!userData) return;
+
+                socket.to?.(creatorSocketId?.socketId)?.emit?.("give-req", { userData });
             } else {
-                socket.emit("no-host", {});
+                socket.emit?.("no-host", {});
             }
         } catch (err) {
-            console.error("Error handling join-req:", err.message);
-            socket.emit("no-host", {});
+            console.error("Error handling join-req:", err?.message);
+            socket.emit?.("no-host", {});
         }
     });
 
@@ -226,7 +242,8 @@ server.on("connection", (socket) => {
     // });
 
     socket.on("kick-room", async ({ userId }) => {
-        const loggedInUser = socket.user;
+        const loggedInUser = socket?.user;
+        if (!loggedInUser?.id || !userId) return;
 
         if (loggedInUser.id === userId) {
             console.warn("Creator attempted to kick themselves. Operation ignored.");
@@ -234,32 +251,34 @@ server.on("connection", (socket) => {
         }
 
         try {
-            const socketDetails = socketHashMap[loggedInUser.id];
-            if (!socketDetails?.roomId) return;
+            const socketDetails = socketHashMap?.[loggedInUser.id];
+            const roomId = socketDetails?.roomId;
+            if (!roomId) return;
 
+            const room = await Room.findById(roomId);
+            if (!room || room?.creator?.toString?.() !== loggedInUser?.id?.toString?.()) return;
 
-            const room = await Room.findById(socketDetails.roomId);
-            if (!room || room.creator.toString() !== loggedInUser.id.toString()) return;
+            room.members = room.members?.filter?.(
+                (member) => member?.user?.toString?.() !== userId?.toString?.()
+            ) ?? [];
 
-            room.members = room.members.filter(member => member.user.toString() !== userId.toString());
-            await room.save();
+            await room.save?.();
 
-            const userToBeKicked = socketHashMap[userId];
+            const userToBeKicked = socketHashMap?.[userId];
 
             if (userToBeKicked?.socketId) {
-                const targetSocket = server.sockets.sockets.get(userToBeKicked.socketId);
+                const targetSocket = server?.sockets?.sockets?.get?.(userToBeKicked.socketId);
 
                 if (targetSocket) {
-                    targetSocket.leave(room._id);
-                    targetSocket.emit("navigate-room", {});
-                    // targetSocket.emit("kicked", { roomId: room._id });
+                    targetSocket.leave?.(room?._id);
+                    targetSocket.emit?.("navigate-room", {});
                 }
             }
 
-            server.to(socketDetails.roomId).emit("room-updated", { userId });
+            server?.to?.(roomId)?.emit?.("room-updated", { userId });
 
         } catch (error) {
-            console.error("Error kicking user from room:", error);
+            console.error("Error kicking user from room:", error?.message);
         }
     });
 
@@ -329,15 +348,15 @@ server.on("connection", (socket) => {
 
                 delete socketHashMap[userId];
 
-
                 server.to(roomId).emit("navigate-room", {});
                 console.log(`Creator (${userId}) left, room closed.`);
 
                 try {
                     await livekitClient.deleteRoom(roomId);
+                    console.log("room deleted participants are disconnected from LiveKit");
 
                 } catch (err) {
-                    console.error("room deleted participants are disconnected from LiveKit:", err);
+                    console.error("Error occured from livekit :", err);
                 }
 
                 const socketsInRoom = await server.in(roomId).fetchSockets();

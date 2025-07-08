@@ -143,7 +143,7 @@ const findFriends = asyncHandler(async (req, res) => {
     const currentUserId = req.user._id;
     const { text } = req.body;
 
-    if (!text || text.trim() === "") {        
+    if (!text || text.trim() === "") {
         return res.status(200).json(new apiResponse(200, [], "No search text provided"));
     }
 
@@ -190,7 +190,12 @@ const getUserDetail = asyncHandler(async (req, res) => {
     console.log("userId", userId);
 
 
-    const user = await User.findById(userId).select("-password -refreshToken -refreshToken");
+    const user = await User.findById(userId)
+        .select("-password -refreshToken -accessToken")
+        .populate({
+            path: "friends",
+            select: "-password -refreshToken -accessToken" 
+        });
 
     if (!user)
         return res.status(400).json(new apiResponse(400, {}, "Please login first"));

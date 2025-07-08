@@ -15,7 +15,7 @@ export const SocketProvider = ({ children }) => {
         });
 
         newSocket.on("connect", () => {
-            console.log("Connected to socket server ", newSocket.id);
+            console.log("Connected to socket server ", newSocket?.id);
         });
 
         newSocket.on("disconnect", () => {

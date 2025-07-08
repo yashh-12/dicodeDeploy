@@ -48,19 +48,17 @@ const router = createBrowserRouter(
       </Route>
 
       <Route path="room/:roomId" loader={roomLoader} element={<Room />} />
-
-
       <Route path="*" element={<NotFound />} />
     </Route>
   )
 );
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <SocketProvider>
-    <LoaderProvider>
-      <UserProvider>
+  <LoaderProvider>
+    <UserProvider>
+      <SocketProvider>
         <RouterProvider router={router} />
-      </UserProvider>
-    </LoaderProvider>
-  </SocketProvider>
+      </SocketProvider>
+    </UserProvider>
+  </LoaderProvider>
 );
