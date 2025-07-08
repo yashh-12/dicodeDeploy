@@ -16,7 +16,7 @@ function Room() {
   const [activeTab, setActiveTab] = useState('editor');
   const [count, setCount] = useState(0)
   const { roomId } = useParams();
-  const { userData } = useUser();
+  const { userData, setUserData } = useUser();
   const data = useLoaderData();
   const LiveKitRoomRef = useRef(null);
   const [mute, setMute] = useState(false)
@@ -334,13 +334,22 @@ function Room() {
           </button>
 
           {isCreator && (
-            <button
-              onClick={() => setShowJoinModal(true)}
-              className="px-6 py-2 bg-yellow-500 text-black font-medium rounded-md hover:bg-yellow-400"
-            >
-              Show Join Requests {count}
-            </button>
+            <div className="relative inline-block">
+              <button
+                onClick={() => setShowJoinModal(true)}
+                className="px-6 py-2 bg-yellow-500 text-black font-medium rounded-md hover:bg-yellow-400 relative"
+              >
+                Show Join Requests
+              </button>
+
+              {count > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full shadow-md">
+                  {count}
+                </span>
+              )}
+            </div>
           )}
+
 
           <button
             onClick={() => setShowMembersModal(true)}

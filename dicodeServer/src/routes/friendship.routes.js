@@ -9,11 +9,8 @@ import {
   removeFriend
 } from "../controller/friendship.controller.js";
 
-import isAuthenticated from "../middlewares/authMid.js";
 
 const friendshipRouter = Router();
-
-// friendshipRouter.use(isAuthenticated);
 
 friendshipRouter.post("/request", sendFriendRequest);
 

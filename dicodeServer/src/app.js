@@ -14,10 +14,9 @@ import friendshipRouter from "./routes/friendship.routes.js";
 import apiResponse from "./utils/apiResponse.js";
 import isAuthenticated from "./middlewares/authMid.js";
 import chatRouter from "./routes/chat.routes.js";
-import { getRoomDetails } from "./controller/room.controller.js";
 import Room from "./models/room.model.js";
 import User from "./models/user.model.js";
-import { AccessToken, TrackSource, trackSourceToString } from "livekit-server-sdk";
+import { AccessToken, TrackSource } from "livekit-server-sdk";
 import { RoomServiceClient } from "livekit-server-sdk";
 
 dotenv.config({ path: ".env" });
@@ -333,102 +332,109 @@ server.on("connection", (socket) => {
     socket.on("leave-room", async () => {
         try {
             const userId = socket?.user?.id;
-            const socketDetails = socketHashMap[userId];
+            if (!userId) return;
+
+            const socketDetails = socketHashMap?.[userId];
             const roomId = socketDetails?.roomId;
+            if (!roomId) return;
 
             const room = await Room.findById(roomId);
             if (!room) return;
 
-            if (userId.toString() === room.creator.toString()) {
+            if (userId?.toString?.() === room?.creator?.toString?.()) {
                 room.members = [{
                     user: userId,
                     role: "editor"
                 }];
-                await room.save();
+
+                await room.save?.();
 
                 delete socketHashMap[userId];
 
-                server.to(roomId).emit("navigate-room", {});
+                server?.to?.(roomId)?.emit?.("navigate-room", {});
                 console.log(`Creator (${userId}) left, room closed.`);
 
                 try {
-                    await livekitClient.deleteRoom(roomId);
+                    await livekitClient?.deleteRoom?.(roomId);
                     console.log("room deleted participants are disconnected from LiveKit");
-
                 } catch (err) {
-                    console.error("Error occured from livekit :", err);
+                    console.error("Error occured from livekit :", err?.message);
                 }
 
-                const socketsInRoom = await server.in(roomId).fetchSockets();
+                const socketsInRoom = await server?.in?.(roomId)?.fetchSockets?.() ?? [];
                 for (const s of socketsInRoom) {
-                    s.leave(roomId);
+                    s?.leave?.(roomId);
                 }
 
             } else {
-                room.members = room.members.filter(member =>
-                    member.user.toString() !== userId.toString()
-                );
-                await room.save();
+                room.members = room.members?.filter?.(
+                    (member) => member?.user?.toString?.() !== userId?.toString?.()
+                ) ?? [];
+
+                await room.save?.();
 
                 delete socketHashMap[userId];
 
                 try {
-                    await livekitClient.removeParticipant(roomId, userId)
-                    console.log("participent leaved room ", socket.user.id);
-
+                    await livekitClient?.removeParticipant?.(roomId, userId);
+                    console.log("participent leaved room ", userId);
                 } catch (error) {
-                    console.log("error removing participent", error.message);
-
+                    console.log("error removing participent", error?.message);
                 }
 
-                server.to(roomId).emit("room-updated", { userId });
-                socket.emit("navigate-room", {});
-
-                socket.leave(roomId);
+                server?.to?.(roomId)?.emit?.("room-updated", { userId });
+                socket?.emit?.("navigate-room", {});
+                socket?.leave?.(roomId);
             }
         } catch (error) {
-            console.error("Error in leave-room:", error.message);
+            console.error("Error in leave-room:", error?.message);
         }
     });
 
     socket.on("need-latest-code", async ({ }) => {
-        const userId = socket.user.id;
-        const socketDetails = socketHashMap[userId];
-        const roomId = socketDetails?.roomId;
+        const userId = socket?.user?.id;
+        if (!userId) return;
 
+        const socketDetails = socketHashMap?.[userId];
+        const roomId = socketDetails?.roomId;
         if (!roomId) {
             console.error("Missing roomId for code-change");
             return;
         }
 
         const room = await Room.findById(roomId);
+        if (!room) return;
 
-        if (room.creator.toString() == userId.toString())
-            return;
+        const creatorId = room?.creator?.toString?.();
+        if (!creatorId || creatorId === userId?.toString?.()) return;
 
-        const userToGetCode = socketHashMap[room.creator]
+        const userToGetCode = socketHashMap?.[creatorId];
+        if (!userToGetCode?.socketId) return;
 
-        socket.to(userToGetCode?.socketId).emit("find-latest-code", { userId });
+        socket?.to?.(userToGetCode.socketId)?.emit?.("find-latest-code", { userId });
     });
 
     socket.on("discc", async () => {
-        const userId = socket.user.id;
-        const socketDetails = socketHashMap[userId];
+        const userId = socket?.user?.id;
+        if (!userId) return;
+
+        const socketDetails = socketHashMap?.[userId];
         if (!socketDetails) return;
 
-        const { roomId } = socketDetails;
+        const roomId = socketDetails?.roomId;
+        if (!roomId) return;
 
         const room = await Room.findById(roomId);
         if (!room) return;
 
-        const isCreator = room.creator.toString() === userId;
+        const isCreator = room?.creator?.toString?.() === userId?.toString?.();
 
         delete socketHashMap[userId];
 
         if (isCreator) {
             const timeout = setTimeout(async () => {
-                const stillMissing = !Object.values(socketHashMap).some(
-                    s => s.roomId === roomId && s.userId === userId
+                const stillMissing = !Object.values(socketHashMap ?? {}).some(
+                    s => s?.roomId === roomId && s?.userId === userId
                 );
 
                 if (stillMissing) {
@@ -436,25 +442,24 @@ server.on("connection", (socket) => {
                         user: userId,
                         role: "editor"
                     }];
-                    await room.save();
+                    await room.save?.();
 
-                    server.to(roomId).emit("navigate-room", {});
+                    server?.to?.(roomId)?.emit?.("navigate-room", {});
                     console.log("Meeting ended because host did not return");
 
                     try {
-                        await livekitClient.deleteRoom(roomId);
-
+                        await livekitClient?.deleteRoom?.(roomId);
                     } catch (err) {
-                        console.error("Room successfuult removed from LiveKit:", err);
+                        console.error("Room successfully removed from LiveKit:", err?.message);
                     }
 
-                    const socketsInRoom = await server.in(roomId).fetchSockets();
+                    const socketsInRoom = await server?.in?.(roomId)?.fetchSockets?.() ?? [];
                     for (const s of socketsInRoom) {
-                        s.leave(roomId);
+                        s?.leave?.(roomId);
                     }
                 }
 
-                delete hostTimeoutMap[userId];
+                delete hostTimeoutMap?.[userId];
             }, 10000);
 
             hostTimeoutMap[userId] = timeout;
@@ -464,122 +469,128 @@ server.on("connection", (socket) => {
     socket.on("change-role", async ({ userId }) => {
         try {
             const currentUserId = socket?.user?.id;
-            const userDetails = socketHashMap[currentUserId];
-            const roomId = userDetails?.roomId;
+            if (!currentUserId || !userId) return;
 
+            const userDetails = socketHashMap?.[currentUserId];
+            const roomId = userDetails?.roomId;
             if (!roomId) return;
 
             const room = await Room.findById(roomId);
-            if (!room || room.creator.toString() !== currentUserId.toString()) return;
+            if (!room || room?.creator?.toString?.() !== currentUserId?.toString?.()) return;
 
             let changedRole = null;
 
-            room.members = room.members.map((member) => {
-                if (member.user.toString() === userId) {
+            room.members = room.members?.map((member) => {
+                if (member?.user?.toString?.() === userId?.toString?.()) {
                     const newRole = member.role === "viewer" ? "editor" : "viewer";
                     changedRole = newRole;
-                    return { ...member.toObject(), role: newRole };
+                    return { ...member?.toObject?.(), role: newRole };
                 }
                 return member;
             });
 
-            await room.save();
+            await room.save?.();
 
-            const targetSocket = socketHashMap[userId];
+            const targetSocket = socketHashMap?.[userId];
+            if (targetSocket) {
+                socketHashMap[userId] = { ...targetSocket, role: changedRole };
 
-            socketHashMap[userId] = { ...targetSocket, role: changedRole }
+                const socketId = targetSocket?.socketId;
+                if (socketId) {
+                    socket?.to?.(socketId)?.emit?.("role-changed", {
+                        userId,
+                        role: changedRole
+                    });
+                    socket?.to?.(socketId)?.emit?.("role-updated", {
+                        role: changedRole
+                    });
+                }
+            }
 
-            if (targetSocket?.socketId) {
-                socket.to(targetSocket.socketId).emit("role-changed", {
+            const creatorSocket = socketHashMap?.[room?.creator];
+            const creatorSocketId = creatorSocket?.socketId;
+            if (creatorSocketId) {
+                server?.to?.(creatorSocketId)?.emit?.("role-changed", {
                     userId,
-                    role: changedRole
-                });
-                socket.to(targetSocket.socketId).emit("role-updated", {
                     role: changedRole
                 });
             }
 
-            const creatorSocket = socketHashMap[room.creator];
-
-            server.to(creatorSocket.socketId).emit("role-changed", {
-                userId,
-                role: changedRole
-            });
-
         } catch (error) {
-            console.error("Error changing role:", error);
+            console.error("Error changing role:", error?.message);
         }
     });
 
     socket.on("got-code", async ({ code, userId }) => {
+        const userID = socket?.user?.id;
+        if (!userID || !userId) return;
 
-
-        const userID = socket.user.id;
-        const socketDetails = socketHashMap[userID];
+        const socketDetails = socketHashMap?.[userID];
         const roomId = socketDetails?.roomId;
-
         if (!roomId) {
             console.error("Missing roomId for code-change");
             return;
         }
 
         const room = await Room.findById(roomId);
+        if (!room) return;
 
-        if (room.creator.toString() == userID.toString()) {
-            const userToSendCode = socketHashMap[userId]
-            socket.to(userToSendCode?.socketId).emit("sent-latest-code", { code })
+        if (room?.creator?.toString?.() === userID?.toString?.()) {
+            const userToSendCode = socketHashMap?.[userId];
+            const targetSocketId = userToSendCode?.socketId;
+            if (targetSocketId) {
+                socket?.to?.(targetSocketId)?.emit?.("sent-latest-code", { code });
+            }
         }
-
-    })
+    });
 
     socket.on("code-change", ({ changes }) => {
-        const userId = socket.user.id;
-        const details = socketHashMap[userId];
-        if (!details?.roomId || details.role !== "editor") return;
+        const userId = socket?.user?.id;
+        const details = socketHashMap?.[userId];
+        if (!details?.roomId || details?.role !== "editor") return;
 
-        socket.to(details.roomId).emit("incomming-code-change", { changes });
+        socket?.to?.(details.roomId)?.emit?.("incomming-code-change", { changes });
     });
 
     socket.on("add-node", ({ node }) => {
-        const userId = socket.user.id;
-        const details = socketHashMap[userId];
-        if (!details?.roomId || details.role !== "editor") return;
+        const userId = socket?.user?.id;
+        const details = socketHashMap?.[userId];
+        if (!details?.roomId || details?.role !== "editor") return;
 
-        socket.to(details.roomId).emit("node-added", { node });
+        socket?.to?.(details.roomId)?.emit?.("node-added", { node });
     });
 
     socket.on("delete-node", ({ nodeId }) => {
-        const userId = socket.user.id;
-        const details = socketHashMap[userId];
-        if (!details?.roomId || details.role !== "editor") return;
+        const userId = socket?.user?.id;
+        const details = socketHashMap?.[userId];
+        if (!details?.roomId || details?.role !== "editor") return;
 
-        socket.to(details.roomId).emit("node-deleted", { nodeId });
+        socket?.to?.(details.roomId)?.emit?.("node-deleted", { nodeId });
     });
 
     socket.on("rename-node", ({ nodeId, label }) => {
-        const userId = socket.user.id;
-        const details = socketHashMap[userId];
-        if (!details?.roomId || details.role !== "editor") return;
+        const userId = socket?.user?.id;
+        const details = socketHashMap?.[userId];
+        if (!details?.roomId || details?.role !== "editor") return;
 
-        socket.to(details.roomId).emit("node-renamed", { nodeId, label });
+        socket?.to?.(details.roomId)?.emit?.("node-renamed", { nodeId, label });
     });
 
     socket.on("connect-nodes", ({ edge }) => {
-        const userId = socket.user.id;
-        const details = socketHashMap[userId];
-        if (!details?.roomId || details.role !== "editor") return;
+        const userId = socket?.user?.id;
+        const details = socketHashMap?.[userId];
+        if (!details?.roomId || details?.role !== "editor") return;
 
-        socket.to(details.roomId).emit("edge-connected", { edge });
+        socket?.to?.(details.roomId)?.emit?.("edge-connected", { edge });
     });
 
     socket.on("delete-edge", ({ edgeId }) => {
-        const userId = socket.user.id;
-        const details = socketHashMap[userId];
-        if (!details?.roomId || details.role !== "editor") return;
+        const userId = socket?.user?.id;
+        const details = socketHashMap?.[userId];
+        if (!details?.roomId || details?.role !== "editor") return;
 
-        socket.to(details.roomId).emit("edge-deleted", { edgeId });
+        socket?.to?.(details.roomId)?.emit?.("edge-deleted", { edgeId });
     });
-
 
 });
 
@@ -591,7 +602,7 @@ app.use("/", (req, res) => {
 (async () => {
     const connection = await connectDb();
     if (connection) {
-        console.log(" Connected to MongoDB:", connection.connection.host);
+        console.log(" Connected to MongoDB:", connection?.connection?.host);
         app.listen(process.env.PORT || 5000, () => {
             console.log(`Server running on http://localhost:${process.env.PORT}`);
         });

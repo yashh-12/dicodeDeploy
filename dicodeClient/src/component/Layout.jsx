@@ -45,7 +45,8 @@ function Layout() {
 
   const noLogNeeded = [
     '/login',
-    '/signup',
+    '/register',
+    '/forgot-password',
     '/',
   ].includes(location.pathname);
 

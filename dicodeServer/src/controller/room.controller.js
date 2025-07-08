@@ -3,23 +3,21 @@ import asyncHandler from "../utils/asyncHandler.js";
 import apiResponse from "../utils/apiResponse.js";
 
 const createRoom = asyncHandler(async (req, res) => {
-    const userId = req.user._id;
-    const { name } = req.body;
+    const userId = req?.user?._id;
+    const name = req?.body?.name;
 
-    if (!name) {
+    if (!userId || !name) {
         return res
             .status(400)
-            .json(new apiResponse(400, {}, "Room name is required"));
+            .json(new apiResponse(400, {}, "Room name or user ID is missing"));
     }
 
-    // Create the room
     const newRoom = await Room.create({
         name,
         creator: userId,
         members: [{ user: userId, role: "editor" }],
     });
 
-    // Populate creator with full details
     const populatedRoom = await Room.findById(newRoom._id)
         .populate("creator", "username email avatar")
         .populate("members.user", "username")
@@ -31,12 +29,17 @@ const createRoom = asyncHandler(async (req, res) => {
 });
 
 const deleteRoom = asyncHandler(async (req, res) => {
-    const userId = req.user.id;
-    const { roomId } = req.params;
+    const userId = req?.user?.id;
+    const roomId = req?.params?.roomId;
+
+    if (!userId || !roomId)
+        return res.status(400).json(new apiResponse(400, {}, "Missing room ID or user ID"));
 
     const room = await Room.findById(roomId);
-    if (!room) return res.status(404).json(new apiResponse(404, {}, "Room not found"));
-    if (room.creator.toString() !== userId)
+    if (!room)
+        return res.status(404).json(new apiResponse(404, {}, "Room not found"));
+
+    if (room?.creator?.toString() !== userId)
         return res.status(403).json(new apiResponse(403, {}, "Only creator can delete room"));
 
     await Room.findByIdAndDelete(roomId);
@@ -44,13 +47,17 @@ const deleteRoom = asyncHandler(async (req, res) => {
 });
 
 const joinRoom = asyncHandler(async (req, res) => {
-    const userId = req.user.id;
-    const { roomId } = req.params;
+    const userId = req?.user?.id;
+    const roomId = req?.params?.roomId;
+
+    if (!userId || !roomId)
+        return res.status(400).json(new apiResponse(400, {}, "Missing user or room ID"));
 
     const room = await Room.findById(roomId);
-    if (!room) return res.status(404).json(new apiResponse(404, {}, "Room not found"));
+    if (!room)
+        return res.status(404).json(new apiResponse(404, {}, "Room not found"));
 
-    const isMember = room.members.some(m => m.user.toString() === userId);
+    const isMember = room?.members?.some(m => m?.user?.toString() === userId);
     if (!isMember) {
         room.members.push({ user: userId, role: "viewer" });
         await room.save();
@@ -60,17 +67,21 @@ const joinRoom = asyncHandler(async (req, res) => {
 });
 
 const leaveRoom = asyncHandler(async (req, res) => {
-    const userId = req.user.id;
-    const { roomId } = req.params;
+    const userId = req?.user?.id;
+    const roomId = req?.params?.roomId;
+
+    if (!userId || !roomId)
+        return res.status(400).json(new apiResponse(400, {}, "Missing room ID or user ID"));
 
     const room = await Room.findById(roomId);
-    if (!room) return res.status(404).json(new apiResponse(404, {}, "Room not found"));
+    if (!room)
+        return res.status(404).json(new apiResponse(404, {}, "Room not found"));
 
-    if (room.creator.toString() == userId) {
+    if (room?.creator?.toString() == userId) {
         return res.status(400).json(new apiResponse(400, {}, "You can't leave room"));
     }
 
-    const index = room.members.findIndex(m => m.user.toString() === userId);
+    const index = room?.members?.findIndex(m => m?.user?.toString() === userId);
     if (index === -1)
         return res.status(400).json(new apiResponse(400, {}, "You're not a member"));
 
@@ -81,8 +92,10 @@ const leaveRoom = asyncHandler(async (req, res) => {
 });
 
 const getAllRooms = asyncHandler(async (req, res) => {
+    const userId = req?.user?.id;
 
-    const userId = req.user.id;
+    if (!userId)
+        return res.status(400).json(new apiResponse(400, {}, "Missing user ID"));
 
     const rooms = await Room.find({ "members.user": userId })
         .populate("creator", "username")
@@ -92,28 +105,23 @@ const getAllRooms = asyncHandler(async (req, res) => {
 });
 
 const getRoomDetails = asyncHandler(async (req, res) => {
-    const { roomId } = req.params;
+    const roomId = req?.params?.roomId;
 
-    if (!roomId) {
-        return res
-            .status(400)
-            .json(new apiResponse(400, {}, "Room ID required"));
-    }
+    if (!roomId)
+        return res.status(400).json(new apiResponse(400, {}, "Room ID required"));
 
     const room = await Room.findById(roomId)
         .populate("creator", "username name email avatar _id")
         .populate("members.user", "username name email avatar _id");
 
-    if (!room) {
-        return res
-            .status(404)
-            .json(new apiResponse(404, {}, "Room not found"));
-    }
+    if (!room)
+        return res.status(404).json(new apiResponse(404, {}, "Room not found"));
 
     return res
         .status(200)
         .json(new apiResponse(200, room, "Room details fetched"));
 });
+
 export {
     createRoom,
     deleteRoom,
@@ -121,4 +129,4 @@ export {
     getAllRooms,
     leaveRoom,
     getRoomDetails
-}
+};

@@ -13,17 +13,18 @@ const navItems = [
 ];
 
 export default function Sidebar() {
-  const { setUserData } = useUser();
-  const { setNavLoader } = useLoader();
+  const { setUserData, userData } = useUser() || {};
+  const { setNavLoader } = useLoader() || {};
   const navigate = useNavigate();
 
   const handleLogout = async () => {
+    if (typeof logoutUser !== "function") return;
     const res = await logoutUser();
-    if (res.success) {
-      setNavLoader(true);
-      setUserData(null);
-      navigate("/");
-      setNavLoader(false);
+    if (res?.success) {
+      setNavLoader?.(true);
+      setUserData?.(null);
+      navigate?.("/");
+      setNavLoader?.(false);
     }
   };
 
@@ -65,7 +66,23 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      <div className="mt-6">
+      <div className="flex flex-col gap-3">
+        {userData?.avatar && userData?.name && (
+          <NavLink
+            to="/profile"
+            className="flex items-center gap-3 px-3 py-2 rounded-full sm:rounded-lg text-gray-200 hover:bg-blue-500/10 hover:text-blue-300 transition-all duration-200"
+          >
+            <img
+              src={userData.avatar}
+              alt={userData.name}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+            <span className="hidden sm:inline font-medium truncate max-w-[120px]">
+              {userData.name}
+            </span>
+          </NavLink>
+        )}
+
         <button
           onClick={handleLogout}
           className="group flex items-center gap-3 px-3 py-2 rounded-full sm:rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 w-full"

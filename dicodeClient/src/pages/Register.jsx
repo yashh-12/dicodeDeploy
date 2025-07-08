@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Header from "../component/Header";
 import { registerUser } from "../service/user.service";
 import logo from "/code.png"; // Add logo import
+import useLoader from "../provider/LoaderProvider";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -10,11 +11,12 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
+  const {navLoader,setNavLoader} = useLoader();
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setNavLoader(true);
     const res = await registerUser({ name, username, email, password });
 
     if (res.success) {
@@ -28,7 +30,7 @@ const Register = () => {
         setError("")
       }, 2000)
     }
-
+    setNavLoader(false);
   };
 
   return (

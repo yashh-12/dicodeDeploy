@@ -32,6 +32,8 @@ import friendLoader from "./loaders/friendsLoader.js";
 import AddFriend from "./component/AddFriend.jsx";
 import addFriendsLoader from "./loaders/add-friendsLoader.js";
 import { SocketProvider } from "./provider/SocketProvider.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -48,6 +50,9 @@ const router = createBrowserRouter(
       </Route>
 
       <Route path="room/:roomId" loader={roomLoader} element={<Room />} />
+      <Route path="profile" element={<ProfilePage />} />
+      <Route path="forgot-password" element={<ForgotPassword />} />
+
       <Route path="*" element={<NotFound />} />
     </Route>
   )

@@ -16,7 +16,6 @@ const registerUser = async ({ name, username, email, password }) => {
   }
 };
 
-
 const loginUser = async ({ usernameOrEmail, password }) => {
   try {
     const res = await fetch("http://localhost:8059/api/users/login", {
@@ -34,8 +33,6 @@ const loginUser = async ({ usernameOrEmail, password }) => {
     return { success: false, error: error.message };
   }
 };
-
-
 
 const logoutUser = async () => {
   try {
@@ -65,7 +62,6 @@ const getUserDetails = async () => {
   }
 };
 
-
 const findFriends = async (text) => {
   try {
     const res = await fetch("http://localhost:8059/api/users/find-friends", {
@@ -86,10 +82,118 @@ const findFriends = async (text) => {
   }
 };
 
+const changePassword = async (usernameOrEmail, password, newPassword) => {
+  try {
+    const res = await fetch("http://localhost:8059/api/users/changePassword", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        usernameOrEmail,
+        password,
+        newPassword
+      }),
+      credentials: "include",
+    })
+    return res.json()
+  } catch (error) {
+    console.log(error);
+
+  }
+
+}
+
+const changeUserDetails = async (name, username, email) => {
+  try {
+    const res = await fetch("http://localhost:8059/api/users/changeUserDetails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+        username,
+        email
+
+      }),
+      credentials: "include",
+    })
+    return res.json()
+  } catch (error) {
+    console.log(error.message);
+
+  }
+
+}
+
+const uploadAvatar = async (avatar) => {
+  try {
+    const formData = new FormData();
+    formData.append("avatar", avatar);
+
+    const res = await fetch("http://localhost:8059/api/users/uploadAvatar", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+
+    return await res.json();
+  } catch (error) {
+    console.error("Upload error:", error.message);
+    return { success: false, message: error.message };
+  }
+};
+
+const verifyOtpPassword = async (otp, emailId, newPassword, confirmPassword) => {
+  try {
+    const res = await fetch(`http://localhost:8059/api/users/verifyotppwd/${emailId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        otp,
+        newPassword,
+        confirmPassword
+      }),
+    })
+    return res.json()
+  } catch (error) {
+    console.log(error);
+
+  }
+
+}
+
+const sendOtpForfgtPwd = async (emailId) => {
+  try {
+    const res = await fetch(`http://localhost:8059/api/users/sendOtpFgPwd`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        emailId
+      })
+    })
+    return res.json()
+  } catch (error) {
+    console.log(error?.message);
+  }
+}
+
 export {
   registerUser,
   loginUser,
   logoutUser,
   findFriends,
-  getUserDetails
+  getUserDetails,
+  changePassword,
+  changeUserDetails,
+  uploadAvatar,
+  verifyOtpPassword,
+  sendOtpForfgtPwd
 };

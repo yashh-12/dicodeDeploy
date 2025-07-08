@@ -4,9 +4,12 @@ import asyncHandler from "../utils/asyncHandler.js";
 import apiResponse from "../utils/apiResponse.js";
 
 const sendMessage = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
-  const { roomId } = req.params;
-  const { content } = req.body;
+  const userId = req?.user?.id;
+  const roomId = req?.params?.roomId;
+  const content = req?.body?.content;
+
+  if (!roomId || !userId)
+    return res.status(400).json(new apiResponse(400, {}, "Missing room ID or user"));
 
   if (!content)
     return res.status(400).json(new apiResponse(400, {}, "Message content is required"));
@@ -15,7 +18,7 @@ const sendMessage = asyncHandler(async (req, res) => {
   if (!room)
     return res.status(404).json(new apiResponse(404, {}, "Room not found"));
 
-  const isMember = room.members.some(m => m.user.toString() === userId);
+  const isMember = room?.members?.some(m => m?.user?.toString?.() === userId);
   if (!isMember)
     return res.status(403).json(new apiResponse(403, {}, "Not a member of this room"));
 
@@ -29,14 +32,17 @@ const sendMessage = asyncHandler(async (req, res) => {
 });
 
 const getChats = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
-  const { roomId } = req.params;
+  const userId = req?.user?.id;
+  const roomId = req?.params?.roomId;
+
+  if (!roomId || !userId)
+    return res.status(400).json(new apiResponse(400, {}, "Missing room ID or user"));
 
   const room = await Room.findById(roomId);
   if (!room)
     return res.status(404).json(new apiResponse(404, {}, "Room not found"));
 
-  const isMember = room.members.some(m => m.user.toString() === userId);
+  const isMember = room?.members?.some(m => m?.user?.toString?.() === userId);
   if (!isMember)
     return res.status(403).json(new apiResponse(403, {}, "Not a member of this room"));
 
@@ -48,7 +54,7 @@ const getChats = asyncHandler(async (req, res) => {
   return res.status(200).json(new apiResponse(200, chats, "Fetched last 10 messages"));
 });
 
-export{
-    sendMessage,
-    getChats
-}
+export {
+  sendMessage,
+  getChats
+};

@@ -2,32 +2,30 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "../component/Header";
 import logo from "/code.png";
-import { loginUser } from "../service/user.service"; // adjust path if needed
+import { loginUser } from "../service/user.service";
 import useUser from "../provider/UserProvider";
+import useLoader from "../provider/LoaderProvider";
 
 const Login = () => {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
-  const {userData,setUserData} = useUser();
+  const { navLoader, setNavLoader } = useLoader()
+  const { userData, setUserData } = useUser();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     const res = await loginUser({ usernameOrEmail, password });
-
+    setNavLoader(true);
     if (res.success) {
-      console.log("Login successful",res.data);    
       setUserData(res?.data);
-      navigate("/space")
+      navigate("/space");
     } else {
       setError(res?.message);
-      console.error("Login failed", res.error || res.message);
-      setTimeout(() => {
-        setError("")
-      }, 2000)
+      setTimeout(() => setError(""), 2000);
     }
+    setNavLoader(false);
   };
 
   return (
@@ -88,6 +86,10 @@ const Login = () => {
             className="w-full px-4 py-3 rounded-lg bg-white/10 text-white border border-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             required
           />
+
+          <div className="flex justify-end text-sm text-cyan-400 hover:underline">
+            <Link to="/forgot-password">Forgot Password?</Link>
+          </div>
 
           <button
             type="submit"

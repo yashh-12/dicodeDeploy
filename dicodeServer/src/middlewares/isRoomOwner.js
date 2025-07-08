@@ -3,14 +3,17 @@ import apiResponse from "../utils/apiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
 const isRoomOwner = asyncHandler(async (req, res, next) => {
-    const { roomId } = req.params;
+    const roomId = req?.params?.roomId;
+
+    if (!roomId)
+        return res.status(400).json(new apiResponse(400, {}, "Room ID is missing"));
 
     const room = await Room.findById(roomId);
 
     if (!room)
         return res.status(400).json(new apiResponse(400, {}, "No room exists"));
 
-    if (room.creator.toString() === req.user._id.toString()) {
+    if (room?.creator?.toString?.() === req?.user?._id?.toString?.()) {
         return next();
     }
 
