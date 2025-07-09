@@ -22,7 +22,7 @@ import { RoomServiceClient } from "livekit-server-sdk";
 dotenv.config({ path: ".env" });
 
 const app = express();
-const http = createServer();
+const http = createServer(app);
 const server = new Server(http, {
     cors: {
         origin: JSON.parse(process.env.CORS),
@@ -603,10 +603,10 @@ app.use("/", (req, res) => {
     const connection = await connectDb();
     if (connection) {
         console.log(" Connected to MongoDB:", connection?.connection?.host);
-        app.listen(process.env.PORT || 5000, () => {
+        app.listen(process.env.PORT, () => {
             console.log(`Server running on http://localhost:${process.env.PORT}`);
         });
-        http.listen(3000, () => {
+        http.listen(process.env.PORT, () => {
             console.log("Socket.IO server running on http://localhost:3000");
         })
     }
