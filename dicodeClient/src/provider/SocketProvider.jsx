@@ -8,7 +8,7 @@ export const SocketProvider = ({ children }) => {
     useEffect(() => {
 
 
-        const newSocket = io('http://localhost:3000', {
+        const newSocket = io('https://dicodedeploy.onrender.com', {
             transports: ['websocket'],
             withCredentials: true,
         });
