@@ -25,7 +25,7 @@ const app = express();
 const http = createServer();
 const server = new Server(http, {
     cors: {
-        origin: process.env.CORS,
+        origin: JSON.parse(process.env.CORS),
         methods: ["GET", "POST"]
     }
 });
@@ -35,7 +35,7 @@ const hostTimeoutMap = {};
 
 
 const corsOptions = {
-    origin: process.env.CORS,
+    origin: JSON.parse(process.env.CORS),
     optionsSuccessStatus: 200,
     credentials: true,
 };
