@@ -1,6 +1,6 @@
 const createRoom = async (name) => {
     try {
-        const res = await fetch("https://dicode.onrender.com/api/rooms/", {
+        const res = await fetch("http://localhost:8059/api/rooms/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -19,7 +19,7 @@ const createRoom = async (name) => {
 
 const getAllRooms = async () => {
     try {
-        const res = await fetch("https://dicode.onrender.com/api/rooms/", {
+        const res = await fetch("http://localhost:8059/api/rooms/", {
             method: "GET",
             credentials: "include"
         });        
@@ -32,7 +32,7 @@ const getAllRooms = async () => {
 
 const getRoomDetails = async (roomId) => {
     try {
-        const res = await fetch(`https://dicode.onrender.com/api/rooms/room/${roomId}`, {
+        const res = await fetch(`http://localhost:8059/api/rooms/room/${roomId}`, {
             method: "GET",
             credentials: "include"
         });        
@@ -46,7 +46,7 @@ const getRoomDetails = async (roomId) => {
 
 const joinRoom = async (roomId) => {
     try {
-        const res = await fetch(`https://dicode.onrender.com/api/rooms/join/${roomId}`, {
+        const res = await fetch(`http://localhost:8059/api/rooms/join/${roomId}`, {
             method: "POST",
             credentials: "include"
         });
@@ -61,7 +61,7 @@ const joinRoom = async (roomId) => {
 
 const leaveRoom = async (roomId) => {
     try {
-        const res = await fetch(`https://dicode.onrender.com/api/rooms/leave/${roomId}`, {
+        const res = await fetch(`http://localhost:8059/api/rooms/leave/${roomId}`, {
             method: "POST",
             credentials: "include"
         });
@@ -76,7 +76,7 @@ const leaveRoom = async (roomId) => {
 
 const deleteRoom = async (roomId) => {
     try {
-        const res = await fetch(`https://dicode.onrender.com/api/rooms/${roomId}`, {
+        const res = await fetch(`http://localhost:8059/api/rooms/${roomId}`, {
             method: "DELETE",
             credentials: "include"
         });

@@ -444,7 +444,7 @@ server.on("connection", (socket) => {
                     }];
                     await room.save?.();
 
-                    server?.to?.(roomId)?.emit?.("navigate-room", {});
+                    socket?.to?.(roomId)?.emit?.("navigate-room", {});
                     console.log("Meeting ended because host did not return");
 
                     try {

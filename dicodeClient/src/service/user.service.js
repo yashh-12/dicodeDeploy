@@ -1,6 +1,6 @@
 const registerUser = async ({ name, username, email, password }) => {
   try {
-    const res = await fetch("https://dicode.onrender.com/api/users/register", {
+    const res = await fetch("http://localhost:8059/api/users/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -18,7 +18,7 @@ const registerUser = async ({ name, username, email, password }) => {
 
 const loginUser = async ({ usernameOrEmail, password }) => {
   try {
-    const res = await fetch("https://dicode.onrender.com/api/users/login", {
+    const res = await fetch("http://localhost:8059/api/users/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -36,7 +36,7 @@ const loginUser = async ({ usernameOrEmail, password }) => {
 
 const logoutUser = async () => {
   try {
-    const res = await fetch("https://dicode.onrender.com/api/users/logout", {
+    const res = await fetch("http://localhost:8059/api/users/logout", {
       method: "POST",
       credentials: "include"
     });
@@ -50,7 +50,7 @@ const logoutUser = async () => {
 
 const getUserDetails = async () => {
   try {
-    const res = await fetch("https://dicode.onrender.com/api/users/", {
+    const res = await fetch("http://localhost:8059/api/users/", {
       method: "GET",
       credentials: "include"
     });
@@ -64,7 +64,7 @@ const getUserDetails = async () => {
 
 const findFriends = async (text) => {
   try {
-    const res = await fetch("https://dicode.onrender.com/api/users/find-friends", {
+    const res = await fetch("http://localhost:8059/api/users/find-friends", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -84,7 +84,7 @@ const findFriends = async (text) => {
 
 const changePassword = async (usernameOrEmail, password, newPassword) => {
   try {
-    const res = await fetch("https://dicode.onrender.com/api/users/changePassword", {
+    const res = await fetch("http://localhost:8059/api/users/changePassword", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -106,7 +106,7 @@ const changePassword = async (usernameOrEmail, password, newPassword) => {
 
 const changeUserDetails = async (name, username, email) => {
   try {
-    const res = await fetch("https://dicode.onrender.com/api/users/changeUserDetails", {
+    const res = await fetch("http://localhost:8059/api/users/changeUserDetails", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -132,7 +132,7 @@ const uploadAvatar = async (avatar) => {
     const formData = new FormData();
     formData.append("avatar", avatar);
 
-    const res = await fetch("https://dicode.onrender.com/api/users/uploadAvatar", {
+    const res = await fetch("http://localhost:8059/api/users/uploadAvatar", {
       method: "POST",
       credentials: "include",
       body: formData,
@@ -147,7 +147,7 @@ const uploadAvatar = async (avatar) => {
 
 const verifyOtpPassword = async (otp, emailId, newPassword, confirmPassword) => {
   try {
-    const res = await fetch(`https://dicode.onrender.com/api/users/verifyotppwd/${emailId}`, {
+    const res = await fetch(`http://localhost:8059/api/users/verifyotppwd/${emailId}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -169,7 +169,7 @@ const verifyOtpPassword = async (otp, emailId, newPassword, confirmPassword) => 
 
 const sendOtpForfgtPwd = async (emailId) => {
   try {
-    const res = await fetch(`https://dicode.onrender.com/api/users/sendOtpFgPwd`, {
+    const res = await fetch(`http://localhost:8059/api/users/sendOtpFgPwd`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

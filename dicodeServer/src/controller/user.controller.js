@@ -90,15 +90,14 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const optionsForAccessToken = {
         maxAge: 1000 * 60 * 60 * 24 * 1,
+        httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-
     };
 
     const optionsForRefreshToken = {
         maxAge: 1000 * 60 * 60 * 24 * 7,
+        httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     };
 
     return res
@@ -296,7 +295,7 @@ const sendForgotPasswordOtp = asyncHandler(async (req, res) => {
 
     const otp = await sendVerificationEmail(emailId);
     console.log(otp);
-
+    
     const hashedOtp = await bcrypt.hash(otp.toString(), 12);
 
     const optionsForOtp = {
