@@ -41,7 +41,6 @@ const router = createBrowserRouter(
       <Route index element={<Home />} />
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
-      <Route path="forgot-password" element={<ForgotPassword />} />
 
       <Route path="space" element={<Space />}>
         <Route index element={<Navigate to="rooms" replace />} />
@@ -52,6 +51,7 @@ const router = createBrowserRouter(
 
       <Route path="room/:roomId" loader={roomLoader} element={<Room />} />
       <Route path="profile" element={<ProfilePage />} />
+      <Route path="forgot-password" element={<ForgotPassword />} />
 
       <Route path="*" element={<NotFound />} />
     </Route>
