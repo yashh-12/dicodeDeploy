@@ -92,12 +92,15 @@ const loginUser = asyncHandler(async (req, res) => {
         maxAge: 1000 * 60 * 60 * 24 * 1,
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
+        sameSite: "none"
     };
 
     const optionsForRefreshToken = {
         maxAge: 1000 * 60 * 60 * 24 * 7,
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
+        sameSite: "none"
+
     };
 
     return res
@@ -295,13 +298,14 @@ const sendForgotPasswordOtp = asyncHandler(async (req, res) => {
 
     const otp = await sendVerificationEmail(emailId);
     console.log(otp);
-    
+
     const hashedOtp = await bcrypt.hash(otp.toString(), 12);
 
     const optionsForOtp = {
         maxAge: 1000 * 60 * 5,
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
+        sameSite: "none"
     };
 
     const newToken = jwt.sign(
