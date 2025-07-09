@@ -1,6 +1,6 @@
 const sendMessage = async (roomId, content) => {
   try {
-    const res = await fetch(`http://localhost:8059/api/chats/send/${roomId}`, {
+    const res = await fetch(`https://dicode.onrender.com/api/chats/send/${roomId}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -19,7 +19,7 @@ const sendMessage = async (roomId, content) => {
 
 const getChats = async (roomId) => {
   try {
-    const res = await fetch(`http://localhost:8059/api/chats/${roomId}`, {
+    const res = await fetch(`https://dicode.onrender.com/api/chats/${roomId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json"

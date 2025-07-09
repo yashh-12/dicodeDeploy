@@ -17,6 +17,8 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     const res = await loginUser({ usernameOrEmail, password });
+    console.log(res);
+    
     setNavLoader(true);
     if (res.success) {
       setUserData(res?.data);
