@@ -13,19 +13,12 @@ export const SocketProvider = ({ children }) => {
             withCredentials: true,
         });
 
-        newSocket.on("connect", () => {
-            console.log("Connected to socket server ", newSocket?.id);
-        });
 
-        newSocket.on("disconnect", () => {
-            console.log("Disconnected from socket server");
-        });
 
         setSocket(newSocket);
 
         return () => {
             newSocket.disconnect();
-            console.log(" Socket cleaned up");
         };
     }, []);
 

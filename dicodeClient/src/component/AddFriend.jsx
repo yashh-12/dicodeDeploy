@@ -28,7 +28,6 @@ function AddFriend() {
           setSearchResults([]);
         }
       } catch (err) {
-        console.error(err);
         setSearchResults([]);
       }
       setLoading(false);

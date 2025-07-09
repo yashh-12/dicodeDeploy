@@ -20,12 +20,9 @@ const Register = () => {
     const res = await registerUser({ name, username, email, password });
 
     if (res.success) {
-      console.log("Registered successfully");
       navigate("/login")
     } else {
       setError(res.message)
-      console.error("Registration failed:", res.message);
-
       setTimeout(() => {
         setError("")
       }, 2000)

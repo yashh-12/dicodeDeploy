@@ -45,7 +45,7 @@ const Home = () => {
         <div className="mt-16 relative w-full max-w-2xl mx-auto group">
           <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-500 blur-md opacity-60 group-hover:blur-lg group-hover:opacity-90 transition-all duration-300 z-0"></div>
           <img
-            src="/src/assets/canvas.jpeg"
+            src="canvas.jpeg"
             alt="React Flow Canvas"
             className="relative rounded-2xl z-10 shadow-2xl hover:scale-105 transition-transform duration-300"
           />

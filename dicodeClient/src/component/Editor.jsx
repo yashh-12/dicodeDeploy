@@ -51,9 +51,7 @@ function CodeEditor({ role = "viewer", roomId }) {
         });
 
 
-        socket.on("sent-latest-code", ({ code }) => {
-            console.log("got code ",code );
-            
+        socket.on("sent-latest-code", ({ code }) => {            
             if (editorRef.current) {
                 const editor = editorRef.current;
 

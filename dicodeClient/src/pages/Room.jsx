@@ -131,7 +131,7 @@ function Room() {
             try {
               metadata = JSON.parse(p?.metadata || '{}');
             } catch (err) {
-              console.warn('Invalid metadata JSON for participant', p?.identity);
+              console.warn('Invalid metadata JSON for participant');
             }
 
             return {
@@ -145,8 +145,6 @@ function Room() {
 
       room.on(RoomEvent.TrackSubscribed, (track, publication) => {
         if (track?.kind === 'video' && track?.source === 'screen_share') {
-          console.log("git track ", track);
-
           const el = track.attach?.();
           if (!el) return;
           el.autoplay = true;

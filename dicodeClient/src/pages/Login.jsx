@@ -16,10 +16,10 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const res = await loginUser({ usernameOrEmail, password });
-    console.log(res);
-    
+
     setNavLoader(true);
+    const res = await loginUser({ usernameOrEmail, password });
+
     if (res.success) {
       setUserData(res?.data);
       navigate("/space");

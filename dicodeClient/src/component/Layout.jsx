@@ -31,7 +31,6 @@ function Layout() {
         })()
       }
     } catch (error) {
-      console.log("error occured");
       setUserData(null)
     }
     finally {
