@@ -603,11 +603,11 @@ app.use("/", (req, res) => {
     const connection = await connectDb();
     if (connection) {
         console.log(" Connected to MongoDB:", connection?.connection?.host);
-        app.listen(process.env.PORT, () => {
-            console.log(`Server running on http://localhost:${process.env.PORT}`);
-        });
+        // app.listen(process.env.PORT, () => {
+        //     console.log(`Server running on http://localhost:${process.env.PORT}`);
+        // });
         http.listen(process.env.PORT, () => {
-            console.log("Socket.IO server running on http://localhost:3000");
+            console.log("Socket.IO server and Express both are running");
         })
     }
 })();
