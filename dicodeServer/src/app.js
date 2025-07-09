@@ -25,7 +25,7 @@ const app = express();
 const http = createServer();
 const server = new Server(http, {
     cors: {
-        origin: "http://localhost:5173",
+        origin: process.env.CORS,
         methods: ["GET", "POST"]
     }
 });
