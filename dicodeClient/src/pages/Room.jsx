@@ -232,9 +232,25 @@ function Room() {
     const room = LiveKitRoomRef?.current;
     if (!room) return;
 
-    await room?.localParticipant?.setScreenShareEnabled?.(!screenShareOn);
+    if (!screenShareOn) {
+      await room?.localParticipant?.setScreenShareEnabled(true, {
+        videoEncoding: {
+          maxBitrate: 5_000_000,
+          maxFramerate: 60,
+          scaleResolutionDownBy: 1
+        },
+        resolution: {
+          width: 1920,
+          height: 1080
+        }
+      });
+    } else {
+      await room?.localParticipant?.setScreenShareEnabled(false);
+    }
+
     setScreenShareOn((prev) => !prev);
   };
+
 
 
 
